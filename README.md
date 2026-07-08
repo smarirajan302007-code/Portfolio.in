@@ -1,3 +1,6 @@
+# Portfolio.in
+ My personal developer portfolio built to showcase my projects, skills, experience, certifications, and contact information with a modern responsive design.
+
 # 🚀 Premium Developer Portfolio — Full Stack MERN
 
 A **production-ready, premium-quality developer portfolio** built with the MERN stack, featuring a beautifully animated public website and a fully-featured admin dashboard.
