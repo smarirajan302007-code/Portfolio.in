@@ -36,32 +36,9 @@ const contactLimiter = rateLimit({
 app.use('/api/contact', contactLimiter);
 
 // ── CORS ────────────────────────────────────────────────────────
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:3000',
-  'http://10.130.147.54:5173',
-  'http://10.130.147.54:5174',
-];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-
-      // In development, allow any localhost or 127.0.0.1 port to avoid issues when Vite changes ports
-      const isDevLocalhost = process.env.NODE_ENV === 'development' && 
-                            (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'));
-                            
-      if (allowedOrigins.includes(origin) || isDevLocalhost) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS not allowed from this origin'));
-      }
-    },
+    origin: true, // Reflects the request origin, allowing all domains including Vercel preview URLs
     credentials: true,
   })
 );

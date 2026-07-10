@@ -71,8 +71,8 @@ const Navbar = () => {
           navigate(to);
         }
       }
-      setMenuOpen(false);
     }
+    setMenuOpen(false);
   };
 
   const getLinkClasses = (linkTo) => {
