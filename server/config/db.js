@@ -19,8 +19,8 @@ const connectDB = async () => {
       console.log('✅ Default Admin auto-created for new cloud database');
     }
   } catch (error) {
-    console.error(`❌ MongoDB connection error: ${error.message}`);
-    process.exit(1);
+    console.error(`❌ MongoDB connection/seed error: ${error.message}`);
+    // Do not process.exit(1) in serverless environments, it causes FUNCTION_INVOCATION_FAILED
   }
 };
 
