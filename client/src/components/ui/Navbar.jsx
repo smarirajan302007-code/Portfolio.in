@@ -60,19 +60,23 @@ const Navbar = () => {
   const handleNavClick = (e, to) => {
     if (location.pathname === '/') {
       e.preventDefault();
-      if (to === '/') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        const id = to.replace('/', '');
-        const element = document.getElementById(id);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' });
+      setMenuOpen(false);
+      setTimeout(() => {
+        if (to === '/') {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-          navigate(to);
+          const id = to.replace('/', '');
+          const element = document.getElementById(id);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          } else {
+            navigate(to);
+          }
         }
-      }
+      }, 150);
+    } else {
+      setMenuOpen(false);
     }
-    setMenuOpen(false);
   };
 
   const getLinkClasses = (linkTo) => {
