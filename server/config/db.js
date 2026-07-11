@@ -13,6 +13,10 @@ const connectDB = async () => {
   }
 
   if (!cached.promise) {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI environment variable is not defined in Vercel settings.');
+    }
+
     const opts = {
       bufferCommands: false,
     };
