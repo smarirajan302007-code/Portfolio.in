@@ -14,16 +14,17 @@ const login = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    // Find admin and include password
-    const admin = await Admin.findOne({ email }).select('+password');
+    // Find admin and include password (normalize email)
+    const normalizedEmail = email.toLowerCase().trim();
+    const admin = await Admin.findOne({ email: normalizedEmail }).select('+password');
     if (!admin) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Username or password are incorrect' });
     }
 
     // Check password
     const isMatch = await admin.matchPassword(password);
     if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.status(401).json({ success: false, message: 'Username or password are incorrect' });
     }
 
     const token = generateToken(admin._id);
@@ -74,6 +75,10 @@ const changePassword = async (req, res, next) => {
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({ success: false, message: 'New password cannot be the same as current password' });
     }
 
     admin.password = newPassword;

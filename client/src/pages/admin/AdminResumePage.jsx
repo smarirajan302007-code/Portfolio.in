@@ -15,17 +15,19 @@ const AdminResumePage = () => {
     profileAPI.get().then((r) => setProfile(r.data.data)).finally(() => setLoading(false));
   }, []);
 
-  const handleFileUpload = async (file) => {
-    if (!file) return;
+  const handleFileUpload = async (files) => {
+    if (!files || files.length === 0) return;
     const formData = new FormData();
-    formData.append('resume', file);
+    for (let i = 0; i < files.length; i++) {
+      formData.append('resumes', files[i]);
+    }
     setUploading(true);
     try {
       const res = await profileAPI.uploadResume(formData);
       setProfile(res.data.data);
-      toast.success('Resume uploaded successfully!');
+      toast.success('Resumes uploaded successfully!');
     } catch (err) {
-      toast.error('Failed to upload resume');
+      toast.error('Failed to upload resumes');
     } finally {
       setUploading(false);
     }
@@ -36,10 +38,10 @@ const AdminResumePage = () => {
     try {
       const res = await profileAPI.deleteResume();
       setProfile(res.data.data);
-      toast.success('Resume deleted successfully!');
+      toast.success('Resumes deleted successfully!');
       setShowDeleteModal(false);
     } catch (err) {
-      toast.error('Failed to delete resume');
+      toast.error('Failed to delete resumes');
     } finally {
       setDeleting(false);
     }
@@ -47,7 +49,8 @@ const AdminResumePage = () => {
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
-  const hasResume = !!profile?.resume?.url;
+  const hasResume = (profile?.resumes && profile.resumes.length > 0) || !!profile?.resume?.url;
+  const resumeCount = profile?.resumes?.length || (profile?.resume?.url ? 1 : 0);
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">
@@ -62,42 +65,39 @@ const AdminResumePage = () => {
         </div>
         
         <div>
-          <h3 className="text-white font-medium mb-2">{hasResume ? 'my resume is Uploaded' : 'Upload my latest Resume'}</h3>
+          <h3 className="text-white font-medium mb-2">
+            {hasResume ? `My Resume is Uploaded (${resumeCount} file${resumeCount > 1 ? 's' : ''})` : 'Upload my latest Resume'}
+          </h3>
           <p className="text-dark-400 text-sm mb-6 max-w-sm mx-auto">
-            {hasResume ? 'I can view, edit (replace), or delete your current resume below.' : 'Upload my resume in PDF or Image format. This will be available for visitors to download from my portfolio.'}
+            {hasResume 
+              ? 'I can edit (replace) or delete your current resumes below.' 
+              : 'Upload my resume in PDF or Image format. I can select multiple images if my resume has multiple pages.'}
           </p>
           
           {!hasResume ? (
             <label className="btn-primary text-sm gap-2 cursor-pointer inline-flex">
               {uploading ? <Spinner size="sm" /> : <FaUpload size={13} />}
-              {uploading ? 'Uploading...' : 'Select File (PDF or Image)'}
+              {uploading ? 'Uploading...' : 'Select File(s) (PDF or Image)'}
               <input
                 type="file"
+                multiple
                 accept=".pdf,image/*"
                 className="hidden"
-                onChange={(e) => handleFileUpload(e.target.files[0])}
+                onChange={(e) => handleFileUpload(e.target.files)}
                 disabled={uploading}
               />
             </label>
           ) : (
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <a 
-                href={profile.resume.url} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="btn-outline text-sm gap-2"
-              >
-                <FaFilePdf size={13} /> View Current
-              </a>
-              
               <label className="btn-primary text-sm gap-2 cursor-pointer inline-flex">
                 {uploading ? <Spinner size="sm" /> : <FaEdit size={13} />}
-                {uploading ? 'Uploading...' : 'Edit / Replace'}
+                {uploading ? 'Uploading...' : 'Edit / Replace All'}
                 <input
                   type="file"
+                  multiple
                   accept=".pdf,image/*"
                   className="hidden"
-                  onChange={(e) => handleFileUpload(e.target.files[0])}
+                  onChange={(e) => handleFileUpload(e.target.files)}
                   disabled={uploading}
                 />
               </label>
@@ -106,7 +106,7 @@ const AdminResumePage = () => {
                 onClick={() => setShowDeleteModal(true)}
                 className="btn-ghost text-red-400 border border-red-500/20 hover:bg-red-500/10 text-sm gap-2"
               >
-                <FaTrash size={13} /> Delete
+                <FaTrash size={13} /> Delete All
               </button>
             </div>
           )}

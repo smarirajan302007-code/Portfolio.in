@@ -28,7 +28,12 @@ const profileSchema = new mongoose.Schema(
       url: { type: String, default: '' },
       publicId: { type: String, default: '' },
     },
+    resumes: [{
+      url: { type: String, default: '' },
+      publicId: { type: String, default: '' },
+    }],
     location: { type: String, default: 'India' },
+    availabilityStatus: { type: String, default: 'Available for opportunities' },
     email: { type: String, default: 'alex@example.com' },
     phone: { type: String, default: '+91 98765 43210' },
     yearsOfExperience: { type: Number, default: 0 },

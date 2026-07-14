@@ -67,10 +67,10 @@ const Footer = () => {
       <div className="absolute top-0 right-1/4 w-72 h-40 bg-green-400/3 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full px-6 md:px-12 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+        <div className="flex flex-col md:flex-row justify-between gap-10 mb-10">
 
           {/* ── Brand ─────────────────────────────────── */}
-          <div>
+          <div className="flex-1 lg:pr-20">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-5 group">
               <div className="w-9 h-9 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shadow-glow group-hover:scale-110 transition-transform">
                 <FaCode className="text-dark-950 text-sm" />
@@ -81,7 +81,7 @@ const Footer = () => {
             </Link>
 
             {settings?.footerText && (
-              <p className="text-dark-400 text-sm leading-relaxed max-w-xs">
+              <p className="text-dark-400 text-sm leading-relaxed w-full">
                 {settings.footerText}
               </p>
             )}
@@ -97,60 +97,62 @@ const Footer = () => {
             )}
           </div>
 
-          {/* ── Quick Links ───────────────────────────────── */}
-          {settings?.footerLinks && settings.footerLinks.length > 0 && (
-            <div className="flex flex-col items-start text-left">
-              <h4 className="text-white font-semibold mb-5 flex items-center gap-2 text-xs uppercase tracking-widest justify-start">
-                Quick Links
-                <span className="w-10 h-px bg-green-400 inline-block" />
-              </h4>
-              <div className="flex flex-col gap-3">
-                {settings.footerLinks.map((link, idx) => (
-                  <Link
-                    key={idx}
-                    to={link.url}
-                    onClick={scrollToTop}
-                    className="text-dark-400 text-sm hover:text-green-400 transition-colors inline-block"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Connect ───────────────────────────────── */}
-          <div className="flex flex-col items-start text-left">
-            <h4 className="text-white font-semibold mb-5 flex items-center gap-2 text-xs uppercase tracking-widest justify-start">
-              Connect
-              <span className="w-10 h-px bg-green-400 inline-block" />
-            </h4>
-
-            {socialLinks.length > 0 && (
-              <div className="flex flex-wrap gap-2.5 justify-start">
-                {socialLinks.map((link) => {
-                  const Icon = ICON_MAP[link.platform] || FaGlobe;
-                  return (
-                    <motion.a
-                      key={link._id}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={link.platform}
-                      title={link.platform}
-                      whileHover={{ y: -3, scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="w-10 h-10 rounded-xl bg-dark-800/80 border border-dark-700/80
-                                 flex items-center justify-center text-dark-400
-                                 hover:text-green-400 hover:border-green-400/40 hover:bg-green-400/5
-                                 transition-colors duration-200"
+          <div className="flex flex-col sm:flex-row gap-10 md:gap-24 shrink-0">
+            {/* ── Quick Links ───────────────────────────────── */}
+            {settings?.footerLinks && settings.footerLinks.length > 0 && (
+              <div className="flex flex-col items-start text-left">
+                <h4 className="text-white font-semibold mb-5 flex items-center gap-2 text-xs uppercase tracking-widest justify-start">
+                  Quick Links
+                  <span className="w-10 h-px bg-green-400 inline-block" />
+                </h4>
+                <div className="flex flex-col gap-3">
+                  {settings.footerLinks.map((link, idx) => (
+                    <Link
+                      key={idx}
+                      to={link.url}
+                      onClick={scrollToTop}
+                      className="text-dark-400 text-sm hover:text-green-400 transition-colors inline-block"
                     >
-                      <Icon size={16} />
-                    </motion.a>
-                  );
-                })}
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* ── Connect ───────────────────────────────── */}
+            <div className="flex flex-col items-start text-left max-w-[200px]">
+              <h4 className="text-white font-semibold mb-5 flex items-center gap-2 text-xs uppercase tracking-widest justify-start">
+                Connect
+                <span className="w-10 h-px bg-green-400 inline-block" />
+              </h4>
+
+              {socialLinks.length > 0 && (
+                <div className="flex flex-wrap gap-2.5 justify-start">
+                  {socialLinks.map((link) => {
+                    const Icon = ICON_MAP[link.platform] || FaGlobe;
+                    return (
+                      <motion.a
+                        key={link._id}
+                        href={link.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={link.platform}
+                        title={link.platform}
+                        whileHover={{ y: -3, scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-10 h-10 rounded-xl bg-dark-800/80 border border-dark-700/80
+                                   flex items-center justify-center text-dark-400
+                                   hover:text-green-400 hover:border-green-400/40 hover:bg-green-400/5
+                                   transition-colors duration-200"
+                      >
+                        <Icon size={16} />
+                      </motion.a>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

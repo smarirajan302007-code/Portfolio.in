@@ -81,7 +81,7 @@ const HeroPage = () => {
                 <FaMapMarkerAlt size={12} />
                 {profile.location}
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                Available for opportunities
+                {profile.availabilityStatus || 'Available for opportunities'}
               </motion.div>
             )}
 

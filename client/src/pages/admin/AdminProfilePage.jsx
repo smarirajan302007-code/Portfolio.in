@@ -20,14 +20,17 @@ const AdminProfilePage = () => {
   };
 
   const handleArrayChange = (field, value) => {
-    const arr = value.split(',').map((v) => v.trim()).filter(Boolean);
-    setProfile((p) => ({ ...p, [field]: arr }));
+    setProfile((p) => ({ ...p, [`${field}Raw`]: value }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await profileAPI.update(profile);
+      const payload = { ...profile };
+      if (payload.typingTextsRaw !== undefined) {
+        payload.typingTexts = payload.typingTextsRaw.split(',').map(v => v.trim()).filter(Boolean);
+      }
+      await profileAPI.update(payload);
       toast.success('Profile updated successfully!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile');
@@ -80,6 +83,10 @@ const AdminProfilePage = () => {
                 <input name="location" value={profile?.location || ''} onChange={handleChange} className="input-field text-sm" placeholder="Boston, MA" />
               </div>
               <div>
+                <label className="block text-dark-400 text-xs mb-1.5">Availability Status</label>
+                <input name="availabilityStatus" value={profile?.availabilityStatus || ''} onChange={handleChange} className="input-field text-sm" placeholder="Available for opportunities" />
+              </div>
+              <div>
                 <label className="block text-dark-400 text-xs mb-1.5">Years of Experience</label>
                 <input name="yearsOfExperience" type="number" value={profile?.yearsOfExperience || 0} onChange={handleChange} className="input-field text-sm" />
               </div>
@@ -91,7 +98,7 @@ const AdminProfilePage = () => {
                 <label className="block text-dark-400 text-xs mb-1.5">Typing Texts (comma-separated)</label>
                 <input
                   type="text"
-                  value={(profile?.typingTexts || []).join(', ')}
+                  value={profile?.typingTextsRaw ?? (profile?.typingTexts || []).join(', ')}
                   onChange={(e) => handleArrayChange('typingTexts', e.target.value)}
                   className="input-field text-sm"
                   placeholder="Full Stack Developer, React Developer, ..."

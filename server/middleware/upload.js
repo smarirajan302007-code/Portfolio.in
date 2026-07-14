@@ -76,44 +76,34 @@ if (useCloudinary) {
   uploadResume = multer({ storage: resumeStorage, limits: { fileSize: 10 * 1024 * 1024 } });
   uploadGeneral = multer({ storage: generalStorage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 } else {
-  // Local storage fallback
-  const uploadsDir = path.join(__dirname, '../uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-  }
-
-  const localDiskStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
-    },
-  });
-
-  uploadProfile = multer({ storage: localDiskStorage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
-  uploadProject = multer({ storage: localDiskStorage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
-  uploadCert = multer({ storage: localDiskStorage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
-  uploadResume = multer({ storage: localDiskStorage, limits: { fileSize: 10 * 1024 * 1024 } });
-  uploadGeneral = multer({ storage: localDiskStorage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+  uploadProfile = multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+  uploadProject = multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
+  uploadCert = multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
+  uploadResume = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+  uploadGeneral = multer({ storage: multer.memoryStorage(), fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
 }
 
 // Middleware to rewrite file paths to public HTTP URLs when using local storage
 const localUrlMiddleware = (req, res, next) => {
   if (req.file && !useCloudinary) {
-    req.file.path = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    const base64 = req.file.buffer.toString('base64');
+    req.file.path = `data:${req.file.mimetype};base64,${base64}`;
+    req.file.filename = `local-${Date.now()}`;
   }
   if (req.files && !useCloudinary) {
     if (Array.isArray(req.files)) {
       req.files.forEach((file) => {
-        file.path = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+        const base64 = file.buffer.toString('base64');
+        file.path = `data:${file.mimetype};base64,${base64}`;
+        file.filename = `local-${Date.now()}`;
       });
     } else {
       // For fields object
       Object.keys(req.files).forEach((key) => {
         req.files[key].forEach((file) => {
-          file.path = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+          const base64 = file.buffer.toString('base64');
+          file.path = `data:${file.mimetype};base64,${base64}`;
+          file.filename = `local-${Date.now()}`;
         });
       });
     }

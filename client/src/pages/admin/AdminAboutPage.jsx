@@ -15,19 +15,26 @@ const AdminAboutPage = () => {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProfile((p) => ({ ...p, [name]: value }));
+    const { name, value, type } = e.target;
+    let parsedValue = value;
+    if (type === 'number') {
+      parsedValue = Math.max(0, parseInt(value) || 0);
+    }
+    setProfile((p) => ({ ...p, [name]: parsedValue }));
   };
 
   const handleArrayChange = (field, value) => {
-    const arr = value.split(',').map((v) => v.trim()).filter(Boolean);
-    setProfile((p) => ({ ...p, [field]: arr }));
+    setProfile((p) => ({ ...p, [`${field}Raw`]: value }));
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await profileAPI.update(profile);
+      const payload = { ...profile };
+      if (payload.interestsRaw !== undefined) {
+        payload.interests = payload.interestsRaw.split(',').map(v => v.trim()).filter(Boolean);
+      }
+      await profileAPI.update(payload);
       toast.success('About section updated successfully!');
     } catch (err) {
       toast.error('Failed to update About section');
@@ -99,11 +106,11 @@ const AdminAboutPage = () => {
             <h3 className="text-white font-medium text-sm">Stats (About Sidebar)</h3>
             <div>
               <label className="block text-dark-400 text-xs mb-1.5">Years of Experience</label>
-              <input name="yearsOfExperience" type="number" value={profile?.yearsOfExperience || 0} onChange={handleChange} className="input-field text-sm" />
+              <input name="yearsOfExperience" type="number" min="0" value={profile?.yearsOfExperience || 0} onChange={handleChange} className="input-field text-sm" />
             </div>
             <div>
               <label className="block text-dark-400 text-xs mb-1.5">Projects Built</label>
-              <input name="projectsCompleted" type="number" value={profile?.projectsCompleted || 0} onChange={handleChange} className="input-field text-sm" />
+              <input name="projectsCompleted" type="number" min="0" value={profile?.projectsCompleted || 0} onChange={handleChange} className="input-field text-sm" />
             </div>
           </div>
         </div>
@@ -124,7 +131,7 @@ const AdminAboutPage = () => {
               <label className="block text-dark-400 text-xs mb-1.5">Interests (comma-separated)</label>
               <input
                 type="text"
-                value={(profile?.interests || []).join(', ')}
+                value={profile?.interestsRaw ?? (profile?.interests || []).join(', ')}
                 onChange={(e) => handleArrayChange('interests', e.target.value)}
                 className="input-field text-sm"
                 placeholder="Web Development, Machine Learning, UI/UX..."

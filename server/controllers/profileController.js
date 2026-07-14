@@ -32,7 +32,7 @@ const updateProfile = async (req, res, next) => {
   try {
     const allowedFields = [
       'name', 'title', 'greeting', 'bio', 'careerObjective', 'interests',
-      'location', 'email', 'phone', 'yearsOfExperience',
+      'location', 'availabilityStatus', 'email', 'phone', 'yearsOfExperience',
       'projectsCompleted', 'typingTexts',
     ];
 
@@ -125,24 +125,41 @@ const uploadHeroImage = async (req, res, next) => {
  */
 const uploadResume = async (req, res, next) => {
   try {
-    if (!req.file) {
+    if (!req.files || req.files.length === 0) {
       return res.status(400).json({ success: false, message: 'No file uploaded' });
     }
 
     const profile = await Profile.findOne();
+    
+    // Delete old legacy resume if exists
     if (profile?.resume?.publicId) {
       await deleteFile(profile.resume.publicId, true);
     }
+    
+    // Delete old resumes if they exist
+    if (profile?.resumes?.length > 0) {
+      for (const resObj of profile.resumes) {
+        if (resObj.publicId) {
+          const isRaw = resObj.url?.toLowerCase().endsWith('.pdf');
+          await deleteFile(resObj.publicId, isRaw);
+        }
+      }
+    }
+
+    const newResumes = req.files.map(file => ({
+      url: file.path,
+      publicId: file.filename
+    }));
 
     const updatedProfile = await Profile.findOneAndUpdate(
       {},
-      { resume: { url: req.file.path, publicId: req.file.filename } },
+      { resumes: newResumes, $unset: { resume: 1 } },
       { new: true, upsert: true }
     );
 
-    await logHistory('Uploaded resume PDF', 'Profile');
+    await logHistory('Uploaded resume', 'Profile');
 
-    res.json({ success: true, message: 'Resume uploaded successfully', data: updatedProfile });
+    res.json({ success: true, message: 'Resumes uploaded successfully', data: updatedProfile });
   } catch (error) {
     next(error);
   }
@@ -156,15 +173,26 @@ const uploadResume = async (req, res, next) => {
 const deleteResume = async (req, res, next) => {
   try {
     const profile = await Profile.findOne();
-    if (profile && profile.resume && profile.resume.public_id) {
-      // Determine if it's raw based on url extension (only for cloudinary)
+    
+    // Delete old legacy resume if exists
+    if (profile?.resume?.publicId) {
       const isRaw = profile.resume.url?.toLowerCase().endsWith('.pdf');
-      await deleteFile(profile.resume.public_id, isRaw);
+      await deleteFile(profile.resume.publicId, isRaw);
+    }
+
+    // Delete all resumes
+    if (profile?.resumes?.length > 0) {
+      for (const resObj of profile.resumes) {
+        if (resObj.publicId) {
+          const isRaw = resObj.url?.toLowerCase().endsWith('.pdf');
+          await deleteFile(resObj.publicId, isRaw);
+        }
+      }
     }
     
     const updatedProfile = await Profile.findOneAndUpdate(
       {},
-      { $unset: { resume: 1 } },
+      { $unset: { resume: 1 }, resumes: [] },
       { new: true }
     );
     

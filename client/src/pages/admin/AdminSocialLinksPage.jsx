@@ -12,7 +12,11 @@ const LinkForm = ({ initial, onSave, onCancel, loading }) => {
   const [form, setForm] = useState(initial || defaultForm);
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    let parsedValue = type === 'checkbox' ? checked : value;
+    if (type === 'number') {
+      parsedValue = Math.max(0, parseInt(value) || 0);
+    }
+    setForm({ ...form, [name]: parsedValue });
   };
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSave({ ...form, isCodingProfile: false }); }} className="space-y-4">
@@ -33,7 +37,7 @@ const LinkForm = ({ initial, onSave, onCancel, loading }) => {
         </div>
         <div>
           <label className="block text-dark-400 text-xs mb-1.5">Display Order</label>
-          <input name="order" type="number" value={form.order} onChange={handleChange} className="input-field text-sm" />
+          <input name="order" type="number" min="0" value={form.order} onChange={handleChange} className="input-field text-sm" />
         </div>
         <div className="flex items-center gap-4 pt-4">
           <label className="flex items-center gap-2 cursor-pointer">

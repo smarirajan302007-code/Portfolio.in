@@ -22,7 +22,11 @@ const ProjectForm = ({ initial, onSave, onCancel, loading }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm({ ...form, [name]: type === 'checkbox' ? checked : value });
+    let parsedValue = type === 'checkbox' ? checked : value;
+    if (type === 'number') {
+      parsedValue = Math.max(0, parseInt(value) || 0);
+    }
+    setForm({ ...form, [name]: parsedValue });
   };
 
   const handleSubmit = (e) => {
@@ -72,7 +76,7 @@ const ProjectForm = ({ initial, onSave, onCancel, loading }) => {
         </div>
         <div>
           <label className="block text-dark-400 text-xs mb-1.5">Display Order</label>
-          <input name="order" type="number" value={form.order} onChange={handleChange} className="input-field text-sm" />
+          <input name="order" type="number" min="0" value={form.order} onChange={handleChange} className="input-field text-sm" />
         </div>
         <div>
           <label className="block text-dark-400 text-xs mb-1.5">Cover Image</label>
