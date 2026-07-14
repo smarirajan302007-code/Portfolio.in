@@ -15,7 +15,11 @@ const CertForm = ({ initial, onSave, onCancel, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData();
-    Object.entries(form).forEach(([k, v]) => formData.append(k, v));
+    Object.entries(form).forEach(([k, v]) => {
+      if (k !== 'image') {
+        formData.append(k, v);
+      }
+    });
     if (imageFile) formData.append('image', imageFile);
     onSave(formData);
   };
@@ -49,11 +53,13 @@ const CertForm = ({ initial, onSave, onCancel, loading }) => {
         </div>
         <div>
           <label className="block text-dark-400 text-xs mb-1.5">Certificate Image</label>
-          <label className="btn-outline text-xs gap-2 cursor-pointer">
-            <FaUpload size={11} /> {imageFile ? imageFile.name : 'Choose Image'}
+          <label className="btn-outline text-xs gap-2 cursor-pointer inline-flex justify-center w-full">
+            <FaUpload size={11} /> {initial?.image?.url ? 'Change Image' : 'Choose Image'}
             <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files[0])} />
           </label>
-          {initial?.image?.url && !imageFile && (
+          {imageFile ? (
+            <p className="text-green-400 text-xs mt-2 truncate">Selected: {imageFile.name}</p>
+          ) : initial?.image?.url && (
             <img src={initial.image.url} alt="cert" className="mt-2 h-16 rounded object-cover" />
           )}
         </div>

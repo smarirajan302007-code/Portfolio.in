@@ -90,7 +90,7 @@ const AdminAboutPage = () => {
               </div>
               <label className="btn-outline text-xs gap-2 cursor-pointer mt-2">
                 {uploading === 'photo' ? <Spinner size="sm" /> : <FaUpload size={11} />}
-                Upload Photo
+                {profile?.photo?.url ? 'Change Photo' : 'Upload Photo'}
                 <input
                   type="file"
                   accept="image/*"

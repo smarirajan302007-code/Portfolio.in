@@ -74,8 +74,8 @@ export const projectsAPI = {
 // ── Education ─────────────────────────────────────────────────────────
 export const educationAPI = {
   getAll: () => api.get('/education'),
-  create: (data) => api.post('/education', data),
-  update: (id, data) => api.put(`/education/${id}`, data),
+  create: (formData) => api.post('/education', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  update: (id, formData) => api.put(`/education/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
   delete: (id) => api.delete(`/education/${id}`),
 };
 

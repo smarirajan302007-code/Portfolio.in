@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaGraduationCap, FaMapMarkerAlt, FaCalendarAlt, FaStar } from 'react-icons/fa';
+import { FaGraduationCap, FaMapMarkerAlt, FaCalendarAlt, FaStar, FaFileDownload, FaClock } from 'react-icons/fa';
 import { educationAPI } from '../../services/api';
 import { SectionHeading, PageLoader, EmptyState, BackButton } from '../../components/ui/shared';
 
@@ -81,7 +81,25 @@ const EducationPage = () => {
                         <span>{edu.percentage}</span>
                       </div>
                     )}
+                    {edu.lastSemester && (
+                      <div className="inline-flex items-center gap-1.5 text-xs font-medium text-green-400 bg-green-400/10 px-2.5 py-1 rounded-md">
+                        <FaClock />
+                        <span>Last Semester: {edu.lastSemester}</span>
+                      </div>
+                    )}
                   </div>
+
+                  {edu.markStatement?.url && (
+                    <a
+                      href={edu.markStatement.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 text-xs font-medium text-white bg-dark-700 hover:bg-dark-600 px-3 py-1.5 rounded-md transition-colors mb-3"
+                    >
+                      <FaFileDownload />
+                      View Mark Statement
+                    </a>
+                  )}
 
                   {edu.description && (
                     <p className="text-dark-300 text-sm leading-relaxed mt-4">{edu.description}</p>

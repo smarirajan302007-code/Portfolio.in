@@ -1,17 +1,32 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FaPlus, FaEdit, FaTrash, FaTimes, FaSave } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaTimes, FaSave, FaUpload } from 'react-icons/fa';
 import { educationAPI } from '../../services/api';
 import { Spinner, EmptyState, BackButton, ConfirmModal } from '../../components/ui/shared';
 import toast from 'react-hot-toast';
 
-const defaultForm = { degree: '', institution: '', location: '', startYear: '', endYear: 'Present', cgpa: '', percentage: '', description: '', order: 0 };
+const defaultForm = { degree: '', institution: '', location: '', startYear: '', endYear: 'Present', cgpa: '', percentage: '', description: '', lastSemester: '', order: 0 };
 
 const EduForm = ({ initial, onSave, onCancel, loading }) => {
   const [form, setForm] = useState(initial || defaultForm);
+  const [file, setFile] = useState(null);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    Object.entries(form).forEach(([k, v]) => {
+      if (k !== 'markStatement') {
+        formData.append(k, v);
+      }
+    });
+    if (file) formData.append('markStatement', file);
+    onSave(formData);
+  };
+
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSave(form); }} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="sm:col-span-2">
           <label className="block text-dark-400 text-xs mb-1.5">Degree *</label>
@@ -44,6 +59,22 @@ const EduForm = ({ initial, onSave, onCancel, loading }) => {
         <div className="sm:col-span-2">
           <label className="block text-dark-400 text-xs mb-1.5">Description</label>
           <textarea name="description" rows={2} value={form.description} onChange={handleChange} className="input-field text-sm resize-none" />
+        </div>
+        <div>
+          <label className="block text-dark-400 text-xs mb-1.5">Last Semester</label>
+          <input name="lastSemester" value={form.lastSemester} onChange={handleChange} className="input-field text-sm" placeholder="Semester 8" />
+        </div>
+        <div>
+          <label className="block text-dark-400 text-xs mb-1.5">Mark Statement</label>
+          <label className="btn-outline text-xs gap-2 cursor-pointer inline-flex w-full justify-center">
+            <FaUpload size={11} /> {initial?.markStatement?.url ? 'Change File' : 'Choose File'}
+            <input type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => setFile(e.target.files[0])} />
+          </label>
+          {file ? (
+            <p className="text-green-400 text-xs mt-2 truncate">Selected: {file.name}</p>
+          ) : initial?.markStatement?.url && (
+            <p className="text-green-400 text-xs mt-2 truncate">Current: Attached</p>
+          )}
         </div>
       </div>
       <div className="flex gap-3">

@@ -28,39 +28,87 @@ const ResumePage = () => {
     
     setDownloading(true);
     try {
-      // Loop through all resumes and trigger download for each
-      for (let i = 0; i < resumes.length; i++) {
-        const resumeUrl = resumes[i].url;
+        // Check if there is only 1 resume and it's already a PDF
+      if (resumes.length === 1 && resumes[0].url?.toLowerCase().endsWith('.pdf')) {
+        const resumeUrl = resumes[0].url;
         let downloadUrl = resumeUrl;
         
-        // Force download cross-origin by injecting Cloudinary attachment flag if applicable
         if (resumeUrl?.includes('res.cloudinary.com') && resumeUrl?.includes('/upload/')) {
-          downloadUrl = resumeUrl.replace('/upload/', `/upload/fl_attachment:${baseName}_${i + 1}/`);
+          downloadUrl = resumeUrl.replace('/upload/', `/upload/fl_attachment:${baseName}/`);
           window.open(downloadUrl, '_blank');
+        } else {
+          const response = await fetch(resumeUrl);
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${baseName}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+        }
+        setDownloading(false);
+        return;
+      }
+
+      // Otherwise, we have multiple images (or a mix) - we should generate a single PDF
+      // Using dynamic import so it doesn't block initial load
+      const { jsPDF } = await import('jspdf');
+      
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt',
+        format: 'a4' // standard A4
+      });
+
+      const a4Width = 595.28;
+      const a4Height = 841.89;
+
+      for (let i = 0; i < resumes.length; i++) {
+        const resumeUrl = resumes[i].url;
+        const isPdf = resumeUrl?.toLowerCase().endsWith('.pdf');
+        
+        if (isPdf) {
+          window.open(resumeUrl, '_blank');
           continue;
         }
 
-        const isPdf = resumeUrl?.toLowerCase().endsWith('.pdf');
-        const fileExtension = isPdf ? 'pdf' : resumeUrl?.split('.').pop() || 'jpg';
-        const downloadName = resumes.length > 1 ? `${baseName}_Page_${i + 1}.${fileExtension}` : `${baseName}.${fileExtension}`;
-
+        // Fetch image and convert to base64
         const response = await fetch(resumeUrl);
-        if (!response.ok) throw new Error('Network response was not ok');
         const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = downloadName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
         
-        // Slight delay between multiple downloads
-        if (i < resumes.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        const base64data = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(blob);
+          reader.onloadend = () => {
+            resolve(reader.result);
+          };
+        });
+
+        if (i > 0) doc.addPage();
+
+        const imgProps = doc.getImageProperties(base64data);
+        const imgRatio = imgProps.width / imgProps.height;
+        const a4Ratio = a4Width / a4Height;
+        
+        let finalWidth = a4Width;
+        let finalHeight = a4Height;
+        let x = 0;
+        let y = 0;
+
+        if (imgRatio > a4Ratio) {
+          finalHeight = a4Width / imgRatio;
+          y = (a4Height - finalHeight) / 2;
+        } else {
+          finalWidth = a4Height * imgRatio;
+          x = (a4Width - finalWidth) / 2;
         }
+
+        doc.addImage(base64data, 'JPEG', x, y, finalWidth, finalHeight);
       }
+
+      doc.save(`${baseName}_Resume.pdf`);
     } catch (error) {
       console.error('Download failed, opening in new tab', error);
       resumes.forEach(res => window.open(res.url, '_blank'));

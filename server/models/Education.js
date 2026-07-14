@@ -10,6 +10,11 @@ const educationSchema = new mongoose.Schema(
     cgpa: { type: String, default: '' },
     percentage: { type: String, default: '' },
     description: { type: String, default: '' },
+    lastSemester: { type: String, default: '' },
+    markStatement: {
+      url: { type: String, default: '' },
+      publicId: { type: String, default: '' },
+    },
     order: { type: Number, default: 0 },
   },
   { timestamps: true }

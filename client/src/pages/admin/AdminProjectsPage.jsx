@@ -32,7 +32,11 @@ const ProjectForm = ({ initial, onSave, onCancel, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData();
-    Object.entries(form).forEach(([k, v]) => formData.append(k, v));
+    Object.entries(form).forEach(([k, v]) => {
+      if (k !== 'coverImage' && k !== 'images') {
+        formData.append(k, v);
+      }
+    });
     if (imageFile) formData.append('coverImage', imageFile);
     onSave(formData);
   };
@@ -80,11 +84,13 @@ const ProjectForm = ({ initial, onSave, onCancel, loading }) => {
         </div>
         <div>
           <label className="block text-dark-400 text-xs mb-1.5">Cover Image</label>
-          <label className="btn-outline text-xs gap-2 cursor-pointer">
-            <FaUpload size={11} /> {imageFile ? imageFile.name : 'Choose Image'}
+          <label className="btn-outline text-xs gap-2 cursor-pointer inline-flex justify-center w-full">
+            <FaUpload size={11} /> {initial?.coverImage?.url ? 'Change Image' : 'Choose Image'}
             <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files[0])} />
           </label>
-          {initial?.coverImage?.url && !imageFile && (
+          {imageFile ? (
+            <p className="text-green-400 text-xs mt-2 truncate">Selected: {imageFile.name}</p>
+          ) : initial?.coverImage?.url && (
             <img src={initial.coverImage.url} alt="Current" className="mt-2 h-16 rounded-lg object-cover" />
           )}
         </div>
