@@ -95,19 +95,26 @@ const updateProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Project not found' });
     }
 
-    const updateData = { ...req.body };
+    const { title, description, longDescription, features, techStack, githubUrl, liveUrl, featured, order, category } = req.body;
 
-    // Parse JSON/CSV strings if sent from FormData
     const parseList = (val) => {
-      if (!val) return undefined;
+      if (val === undefined || val === null) return undefined;
       if (Array.isArray(val)) return val;
+      if (typeof val === 'string' && val.trim() === '') return [];
       try { return JSON.parse(val); } catch { return val.split(',').map((s) => s.trim()).filter(Boolean); }
     };
-    if (updateData.features !== undefined) updateData.features = parseList(updateData.features);
-    if (updateData.techStack !== undefined) updateData.techStack = parseList(updateData.techStack);
-    if (updateData.featured !== undefined) {
-      updateData.featured = updateData.featured === 'true' || updateData.featured === true;
-    }
+
+    const updateData = {};
+    if (title !== undefined) updateData.title = title;
+    if (description !== undefined) updateData.description = description;
+    if (longDescription !== undefined) updateData.longDescription = longDescription;
+    if (features !== undefined) updateData.features = parseList(features);
+    if (techStack !== undefined) updateData.techStack = parseList(techStack);
+    if (githubUrl !== undefined) updateData.githubUrl = githubUrl;
+    if (liveUrl !== undefined) updateData.liveUrl = liveUrl;
+    if (featured !== undefined) updateData.featured = featured === 'true' || featured === true;
+    if (order !== undefined) updateData.order = order;
+    if (category !== undefined) updateData.category = category;
 
     // Handle new cover image
     if (req.file) {

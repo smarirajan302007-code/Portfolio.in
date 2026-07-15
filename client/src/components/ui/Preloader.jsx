@@ -6,8 +6,8 @@ const Preloader = ({ onComplete }) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Animate progress to 100% over 2.5 seconds
-    const duration = 2500;
+    // Animate progress to 100% over 1 second
+    const duration = 1000;
     const intervalTime = 30;
     const steps = duration / intervalTime;
     let currentStep = 0;

@@ -7,6 +7,7 @@ import {
   FaArrowRight, FaCode, FaMapMarkerAlt, FaInstagram, FaYoutube, FaGlobe,
 } from 'react-icons/fa';
 import { SiLeetcode, SiHackerrank, SiCodechef, SiCodeforces, SiGeeksforgeeks } from 'react-icons/si';
+import { useInView } from 'react-intersection-observer';
 import { profileAPI, socialLinksAPI } from '../../services/api';
 import AboutPage from './AboutPage';
 import SkillsPage from './SkillsPage';
@@ -37,6 +38,15 @@ const floatVariants = {
     y: [0, -15, 0],
     transition: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
   },
+};
+
+const LazySection = ({ id, children }) => {
+  const { ref, inView } = useInView({ triggerOnce: true, rootMargin: '300px 0px' });
+  return (
+    <div id={id} ref={ref} className="min-h-[50vh]">
+      {inView ? children : null}
+    </div>
+  );
 };
 
 const HeroPage = () => {
@@ -285,14 +295,14 @@ const HeroPage = () => {
         </motion.div>
       </div>
     </section>
-      <div id="about"><AboutPage /></div>
-      <div id="skills"><SkillsPage /></div>
-      <div id="projects"><ProjectsPage /></div>
-      <div id="education"><EducationPage /></div>
-      <div id="certifications"><CertificationsPage /></div>
-      <div id="coding-profiles"><CodingProfilesPage /></div>
-      <div id="resume"><ResumePage /></div>
-      <div id="contact"><ContactPage /></div>
+      <LazySection id="about"><AboutPage /></LazySection>
+      <LazySection id="skills"><SkillsPage /></LazySection>
+      <LazySection id="projects"><ProjectsPage /></LazySection>
+      <LazySection id="education"><EducationPage /></LazySection>
+      <LazySection id="certifications"><CertificationsPage /></LazySection>
+      <LazySection id="coding-profiles"><CodingProfilesPage /></LazySection>
+      <LazySection id="resume"><ResumePage /></LazySection>
+      <LazySection id="contact"><ContactPage /></LazySection>
     </div>
   );
 };
