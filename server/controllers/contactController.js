@@ -79,7 +79,7 @@ const getMessages = async (req, res, next) => {
 
     res.json({
       success: true,
-      count: total,
+      count: messages.length,
       data: decryptedMessages,
     });
   } catch (error) {
