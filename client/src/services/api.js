@@ -106,6 +106,8 @@ export const contactAPI = {
   markRead: (id) => api.put(`/contact/${id}/read`),
   delete: (id) => api.delete(`/contact/${id}`),
   reply: (id, data) => api.post(`/contact/${id}/reply`, data),
+  editReply: (id, replyId, data) => api.put(`/contact/${id}/reply/${replyId}`, data),
+  deleteReply: (id, replyId) => api.delete(`/contact/${id}/reply/${replyId}`)
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────

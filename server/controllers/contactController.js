@@ -71,6 +71,7 @@ const getMessages = async (req, res, next) => {
       isRead: msg.isRead,
       createdAt: msg.createdAt,
       replies: msg.replies ? msg.replies.map(reply => ({
+        _id: reply._id,
         message: decrypt(reply.message),
         sentAt: reply.sentAt
       })) : []
@@ -78,8 +79,7 @@ const getMessages = async (req, res, next) => {
 
     res.json({
       success: true,
-      count: decryptedMessages.length,
-      unreadCount,
+      count: total,
       data: decryptedMessages,
     });
   } catch (error) {
@@ -88,28 +88,28 @@ const getMessages = async (req, res, next) => {
 };
 
 /**
- * @desc    Mark message as read
+ * @desc    Mark a contact message as read
  * @route   PUT /api/contact/:id/read
  * @access  Private
  */
 const markAsRead = async (req, res, next) => {
   try {
-    const message = await ContactMessage.findByIdAndUpdate(
-      req.params.id,
-      { isRead: true },
-      { new: true }
-    );
+    const message = await ContactMessage.findById(req.params.id);
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found' });
     }
-    res.json({ success: true, message: 'Marked as read', data: message });
+
+    message.isRead = true;
+    await message.save();
+
+    res.json({ success: true, message: 'Message marked as read' });
   } catch (error) {
     next(error);
   }
 };
 
 /**
- * @desc    Delete contact message
+ * @desc    Delete a contact message
  * @route   DELETE /api/contact/:id
  * @access  Private
  */
@@ -119,6 +119,7 @@ const deleteMessage = async (req, res, next) => {
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found' });
     }
+
     res.json({ success: true, message: 'Message deleted' });
   } catch (error) {
     next(error);
@@ -126,7 +127,7 @@ const deleteMessage = async (req, res, next) => {
 };
 
 /**
- * @desc    Get dashboard stats
+ * @desc    Get message statistics
  * @route   GET /api/contact/stats
  * @access  Private
  */
@@ -171,6 +172,7 @@ const replyToMessage = async (req, res, next) => {
     }
 
     // Decrypt fields to send the email
+    const { decrypt } = require('../utils/encryption');
     const name = decrypt(contactMessage.name);
     const email = decrypt(contactMessage.email);
     
@@ -184,10 +186,13 @@ const replyToMessage = async (req, res, next) => {
 
     // Save reply to database (AES encrypted)
     const { encrypt } = require('../utils/encryption');
-    contactMessage.replies.push({
+    
+    // Create new reply subdocument
+    const newReply = {
       message: encrypt(message),
       sentAt: new Date()
-    });
+    };
+    contactMessage.replies.push(newReply);
 
     // Mark as read if not already
     if (!contactMessage.isRead) {
@@ -195,10 +200,67 @@ const replyToMessage = async (req, res, next) => {
     }
     await contactMessage.save();
 
-    res.json({ success: true, message: 'Reply sent successfully', reply: { message, sentAt: new Date() } });
+    // Find the newly added reply to get its assigned _id
+    const savedReply = contactMessage.replies[contactMessage.replies.length - 1];
+
+    res.json({ success: true, message: 'Reply sent successfully', reply: { _id: savedReply._id, message, sentAt: savedReply.sentAt } });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { sendMessage, getMessages, markAsRead, deleteMessage, getStats, replyToMessage };
+/**
+ * @desc    Edit a specific reply
+ * @route   PUT /api/contact/:id/reply/:replyId
+ * @access  Private
+ */
+const editReply = async (req, res, next) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Reply message is required' });
+    }
+
+    const contactMessage = await ContactMessage.findById(req.params.id);
+    if (!contactMessage) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+
+    const reply = contactMessage.replies.id(req.params.replyId);
+    if (!reply) {
+      return res.status(404).json({ success: false, message: 'Reply not found' });
+    }
+
+    const { encrypt } = require('../utils/encryption');
+    reply.message = encrypt(message);
+    
+    await contactMessage.save();
+
+    res.json({ success: true, message: 'Reply updated successfully', reply: { _id: reply._id, message, sentAt: reply.sentAt } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Delete a specific reply
+ * @route   DELETE /api/contact/:id/reply/:replyId
+ * @access  Private
+ */
+const deleteReply = async (req, res, next) => {
+  try {
+    const contactMessage = await ContactMessage.findById(req.params.id);
+    if (!contactMessage) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+
+    contactMessage.replies.pull(req.params.replyId);
+    await contactMessage.save();
+
+    res.json({ success: true, message: 'Reply deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { sendMessage, getMessages, markAsRead, deleteMessage, getStats, replyToMessage, editReply, deleteReply };
