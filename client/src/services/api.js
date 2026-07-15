@@ -105,6 +105,7 @@ export const contactAPI = {
   getStats: () => api.get('/contact/stats'),
   markRead: (id) => api.put(`/contact/${id}/read`),
   delete: (id) => api.delete(`/contact/${id}`),
+  reply: (id, data) => api.post(`/contact/${id}/reply`, data),
 };
 
 // ── Admin ─────────────────────────────────────────────────────────────

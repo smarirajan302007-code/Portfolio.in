@@ -3,9 +3,7 @@ const nodemailer = require('nodemailer');
 // Create reusable transporter
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.EMAIL_HOST,
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, // true for 465, false for other ports
+    service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
@@ -78,4 +76,31 @@ const sendContactAutoReply = async ({ name, email }) => {
   return await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendContactNotification, sendContactAutoReply };
+/**
+ * Send admin's manual reply to contact form sender
+ */
+const sendReplyEmail = async ({ name, email, subject, replyMessage }) => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: `"S. Mari Rajan" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `Re: ${subject}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #0f172a; color: #e2e8f0; padding: 30px; border-radius: 10px;">
+        <div style="background: linear-gradient(135deg, #4ADE80, #22c55e); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+          <h1 style="color: #0f172a; margin: 0; font-size: 20px;">Response to your message, ${name}</h1>
+        </div>
+        <div style="background: #1e293b; padding: 20px; border-radius: 8px;">
+          <p style="line-height: 1.7; white-space: pre-wrap;">${replyMessage}</p>
+          <hr style="border: 0; border-top: 1px solid #334155; margin: 25px 0;">
+          <p style="line-height: 1.7; margin-bottom: 0;">Best regards,<br><strong style="color: #4ADE80;">S. Mari Rajan</strong></p>
+        </div>
+      </div>
+    `,
+  };
+
+  return await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendContactNotification, sendContactAutoReply, sendReplyEmail };

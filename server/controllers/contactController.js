@@ -150,4 +150,45 @@ const getStats = async (req, res, next) => {
   }
 };
 
-module.exports = { sendMessage, getMessages, markAsRead, deleteMessage, getStats };
+/**
+ * @desc    Reply to a contact message
+ * @route   POST /api/contact/:id/reply
+ * @access  Private
+ */
+const replyToMessage = async (req, res, next) => {
+  try {
+    const { message, subject: frontendSubject } = req.body;
+    if (!message) {
+      return res.status(400).json({ success: false, message: 'Reply message is required' });
+    }
+
+    const contactMessage = await ContactMessage.findById(req.params.id);
+    if (!contactMessage) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+
+    // Decrypt fields to send the email
+    const name = decrypt(contactMessage.name);
+    const email = decrypt(contactMessage.email);
+    
+    // The subject in DB is RSA-encrypted by the frontend before being AES-encrypted by the backend.
+    // So decrypt(contactMessage.subject) only removes the AES layer, leaving the RSA string.
+    // To prevent sending spammy base64 subjects, we use the decrypted subject provided by the frontend admin.
+    const subject = frontendSubject || 'Your Contact Message';
+
+    const { sendReplyEmail } = require('../services/emailService');
+    await sendReplyEmail({ name, email, subject, replyMessage: message });
+
+    // Mark as read if not already
+    if (!contactMessage.isRead) {
+      contactMessage.isRead = true;
+      await contactMessage.save();
+    }
+
+    res.json({ success: true, message: 'Reply sent successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { sendMessage, getMessages, markAsRead, deleteMessage, getStats, replyToMessage };

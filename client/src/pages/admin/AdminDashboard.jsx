@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   FaProjectDiagram, FaCode, FaCertificate, FaEnvelope, FaEye,
   FaArrowRight, FaUser, FaCog, FaTrash, FaGraduationCap, FaShareAlt
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { contactAPI, profileAPI } from '../../services/api';
 import { Spinner, BackButton } from '../../components/ui/shared';
 import { useAuth } from '../../context/AuthContext';
@@ -36,37 +37,49 @@ const StatCard = ({ icon: Icon, label, value, color, to, delay }) => (
 );
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [profileName, setProfileName] = useState('');
-  const [loading, setLoading] = useState(true);
   const { admin } = useAuth();
 
-  const fetchDashboardData = () => {
-    Promise.all([
-      contactAPI.getStats(),
-      contactAPI.getAll({ isRead: false }),
-      profileAPI.get().catch(() => ({ data: { data: null } }))
-    ]).then(([statsRes, msgRes, profileRes]) => {
-      setStats(statsRes.data.data);
-      setMessages(msgRes.data.data.slice(0, 5));
-      if (profileRes.data?.data?.name) {
-        setProfileName(profileRes.data.data.name);
-      }
-    }).finally(() => setLoading(false));
-  };
+  const { data: statsData, isLoading: statsLoading } = useQuery({
+    queryKey: ['adminStats'],
+    queryFn: async () => {
+      const res = await contactAPI.getStats();
+      return res.data.data;
+    },
+  });
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
+  const { data: messagesData, isLoading: messagesLoading } = useQuery({
+    queryKey: ['unreadMessages'],
+    queryFn: async () => {
+      const res = await contactAPI.getAll({ isRead: false });
+      return res.data.data.slice(0, 5);
+    },
+  });
+
+  const { data: profileData, isLoading: profileLoading } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      try {
+        const res = await profileAPI.get();
+        return res.data.data;
+      } catch (err) {
+        return null;
+      }
+    },
+  });
+
+  const loading = statsLoading || messagesLoading || profileLoading;
 
   if (loading) return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>;
 
+  const stats = statsData || {};
+  const messages = messagesData || [];
+  const profileName = profileData?.name || '';
+
   const statCards = [
-    { icon: FaProjectDiagram, label: 'Total Projects', value: stats?.projects || 0, color: 'bg-blue-500/15 text-blue-400', to: '/admin/projects', delay: 0.1 },
-    { icon: FaCode, label: 'Skills', value: stats?.skills || 0, color: 'bg-green-400/15 text-green-400', to: '/admin/skills', delay: 0.2 },
-    { icon: FaCertificate, label: 'Certifications', value: stats?.certifications || 0, color: 'bg-purple-500/15 text-purple-400', to: '/admin/certifications', delay: 0.3 },
-    { icon: FaEnvelope, label: 'Unread Messages', value: stats?.unreadMessages || 0, color: 'bg-orange-500/15 text-orange-400', to: '/admin/messages', delay: 0.4 },
+    { icon: FaProjectDiagram, label: 'Total Projects', value: stats.projects || 0, color: 'bg-blue-500/15 text-blue-400', to: '/admin/projects', delay: 0.1 },
+    { icon: FaCode, label: 'Skills', value: stats.skills || 0, color: 'bg-green-400/15 text-green-400', to: '/admin/skills', delay: 0.2 },
+    { icon: FaCertificate, label: 'Certifications', value: stats.certifications || 0, color: 'bg-purple-500/15 text-purple-400', to: '/admin/certifications', delay: 0.3 },
+    { icon: FaEnvelope, label: 'Unread Messages', value: stats.unreadMessages || 0, color: 'bg-orange-500/15 text-orange-400', to: '/admin/messages', delay: 0.4 },
   ];
 
   return (

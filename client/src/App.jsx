@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { HelmetProvider } from 'react-helmet-async';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './routes/ProtectedRoute';
 
@@ -37,76 +38,89 @@ import AdminAboutPage from './pages/admin/AdminAboutPage';
 import AdminResumePage from './pages/admin/AdminResumePage';
 import AdminCodingPage from './pages/admin/AdminCodingPage';
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 function App() {
   return (
     <HelmetProvider>
-      <BrowserRouter>
-        <AuthProvider>
-          {/* Toast notifications */}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#1e293b',
-                color: '#e2e8f0',
-                border: '1px solid rgba(74, 222, 128, 0.2)',
-                borderRadius: '12px',
-              },
-              success: { iconTheme: { primary: '#4ADE80', secondary: '#0f172a' } },
-              error: { iconTheme: { primary: '#f87171', secondary: '#0f172a' } },
-            }}
-          />
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            {/* Toast notifications */}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#1e293b',
+                  color: '#e2e8f0',
+                  border: '1px solid rgba(74, 222, 128, 0.2)',
+                  borderRadius: '12px',
+                },
+                success: { iconTheme: { primary: '#4ADE80', secondary: '#0f172a' } },
+                error: { iconTheme: { primary: '#f87171', secondary: '#0f172a' } },
+              }}
+            />
 
-          <Routes>
-            {/* ── Public Routes ──────────────────────────────── */}
-            <Route element={<PublicLayout />}>
-              <Route path="/" element={<HeroPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/skills" element={<SkillsPage />} />
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/education" element={<EducationPage />} />
-              <Route path="/certifications" element={<CertificationsPage />} />
-              <Route path="/coding-profiles" element={<CodingProfilesPage />} />
-              <Route path="/resume" element={<ResumePage />} />
-              <Route path="/contact" element={<ContactPage />} />
-            </Route>
+            <Routes>
+              {/* ── Public Routes ──────────────────────────────── */}
+              <Route element={<PublicLayout />}>
+                <Route path="/" element={<HeroPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/skills" element={<SkillsPage />} />
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/education" element={<EducationPage />} />
+                <Route path="/certifications" element={<CertificationsPage />} />
+                <Route path="/coding-profiles" element={<CodingProfilesPage />} />
+                <Route path="/resume" element={<ResumePage />} />
+                <Route path="/contact" element={<ContactPage />} />
+              </Route>
 
-            {/* ── Admin Login ────────────────────────────────── */}
-            <Route path="/admin/login" element={<AdminLoginPage />} />
+              {/* ── Admin Login ────────────────────────────────── */}
+              <Route path="/admin/login" element={<AdminLoginPage />} />
 
-            {/* ── Protected Admin Routes ─────────────────────── */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="profile" element={<AdminProfilePage />} />
-              <Route path="about" element={<AdminAboutPage />} />
-            <Route path="skills" element={<AdminSkillsPage />} />
-            <Route path="projects" element={<AdminProjectsPage />} />
-            <Route path="education" element={<AdminEducationPage />} />
-            <Route path="certifications" element={<AdminCertificationsPage />} />
-            <Route path="coding" element={<AdminCodingPage />} />
-            <Route path="resume" element={<AdminResumePage />} />
-            <Route path="social-links" element={<AdminSocialLinksPage />} />
-            <Route path="footer" element={<AdminFooterPage />} />
-              <Route path="messages" element={<AdminMessagesPage />} />
-              <Route path="settings" element={<AdminSettingsPage />} />
-              <Route path="history" element={<AdminHistoryPage />} />
-              <Route path="change-password" element={<AdminChangePasswordPage />} />
-            </Route>
+              {/* ── Protected Admin Routes ─────────────────────── */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="profile" element={<AdminProfilePage />} />
+                <Route path="about" element={<AdminAboutPage />} />
+                <Route path="skills" element={<AdminSkillsPage />} />
+                <Route path="projects" element={<AdminProjectsPage />} />
+                <Route path="education" element={<AdminEducationPage />} />
+                <Route path="certifications" element={<AdminCertificationsPage />} />
+                <Route path="coding" element={<AdminCodingPage />} />
+                <Route path="resume" element={<AdminResumePage />} />
+                <Route path="social-links" element={<AdminSocialLinksPage />} />
+                <Route path="footer" element={<AdminFooterPage />} />
+                <Route path="messages" element={<AdminMessagesPage />} />
+                <Route path="settings" element={<AdminSettingsPage />} />
+                <Route path="history" element={<AdminHistoryPage />} />
+                <Route path="change-password" element={<AdminChangePasswordPage />} />
+              </Route>
 
-            {/* ── 404 fallback ───────────────────────────────── */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+              {/* ── 404 fallback ───────────────────────────────── */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
     </HelmetProvider>
   );
 }

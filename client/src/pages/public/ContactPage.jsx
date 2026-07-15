@@ -4,6 +4,7 @@ import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaGithub, FaLinkedin, FaTwitter, F
 import { contactAPI, profileAPI } from '../../services/api';
 import { SectionHeading, BackButton } from '../../components/ui/shared';
 import toast from 'react-hot-toast';
+import { encryptMessage } from '../../utils/encryption';
 
 const ContactPage = () => {
   const [profile, setProfile] = useState(null);
@@ -23,9 +24,39 @@ const ContactPage = () => {
       toast.error('Please fill in all fields');
       return;
     }
+    
+    // Strict email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const validDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
+    
+    if (!emailRegex.test(form.email)) {
+      toast.error('Please enter a valid email format');
+      return;
+    }
+
+    const domain = form.email.split('@')[1].toLowerCase();
+    
+    if (domain === 'gamil.com') {
+      toast.error('Did you mean gmail.com? Please check your email.');
+      return;
+    }
+
+    if (!validDomains.includes(domain)) {
+      toast.error(`Please use a standard email provider (e.g., ${validDomains.join(', ')})`);
+      return;
+    }
+
     setLoading(true);
     try {
-      await contactAPI.send(form);
+      // E2EE: Encrypt sensitive fields before sending
+      const payload = {
+        name: form.name,
+        email: form.email,
+        subject: encryptMessage(form.subject),
+        message: encryptMessage(form.message),
+      };
+
+      await contactAPI.send(payload);
       toast.success('Message sent successfully! I\'ll get back to you soon.');
       setForm({ name: '', email: '', subject: '', message: '' });
       setSent(true);

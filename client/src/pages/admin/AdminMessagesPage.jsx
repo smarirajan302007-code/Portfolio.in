@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox } from 'react-icons/fa';
+import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox, FaPaperPlane, FaTimes } from 'react-icons/fa';
 import { contactAPI } from '../../services/api';
 import { Spinner, EmptyState, BackButton, ConfirmModal } from '../../components/ui/shared';
 import { formatDate } from '../../utils/constants';
 import toast from 'react-hot-toast';
+import { decryptMessage } from '../../utils/encryption';
 
 const AdminMessagesPage = () => {
   const [messages, setMessages] = useState([]);
@@ -12,10 +13,23 @@ const AdminMessagesPage = () => {
   const [selected, setSelected] = useState(null);
   const [filter, setFilter] = useState('all');
 
+  const [isReplying, setIsReplying] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
   const fetchMessages = () => {
     setLoading(true);
     const params = filter === 'unread' ? { isRead: false } : filter === 'read' ? { isRead: true } : {};
-    contactAPI.getAll(params).then((r) => setMessages(r.data.data)).finally(() => setLoading(false));
+    contactAPI.getAll(params)
+      .then((r) => {
+        const decryptedMsgs = r.data.data.map(m => ({
+          ...m,
+          subject: decryptMessage(m.subject),
+          message: decryptMessage(m.message)
+        }));
+        setMessages(decryptedMsgs);
+      })
+      .finally(() => setLoading(false));
   };
   useEffect(fetchMessages, [filter]);
 
@@ -47,7 +61,30 @@ const AdminMessagesPage = () => {
 
   const handleSelect = (msg) => {
     setSelected(msg);
+    setIsReplying(false);
+    setReplyText('');
     if (!msg.isRead) handleMarkRead(msg._id);
+  };
+
+  const handleSendReply = async () => {
+    if (!replyText.trim()) {
+      toast.error('Reply message cannot be empty');
+      return;
+    }
+    setSendingReply(true);
+    try {
+      await contactAPI.reply(selected._id, { 
+        message: replyText,
+        subject: selected.subject
+      });
+      toast.success('Reply sent successfully via email!');
+      setIsReplying(false);
+      setReplyText('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send reply');
+    } finally {
+      setSendingReply(false);
+    }
   };
 
   const unreadCount = messages.filter((m) => !m.isRead).length;
@@ -105,9 +142,9 @@ const AdminMessagesPage = () => {
         </div>
 
         {/* Message detail */}
-        <div className="lg:col-span-3 glass-card overflow-y-auto">
+        <div className="lg:col-span-3 glass-card flex flex-col overflow-hidden">
           {selected ? (
-            <div className="p-6">
+            <div className="flex-1 overflow-y-auto p-6 scrollbar-hidden">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
                   <h2 className="text-white font-bold text-lg">{selected.subject}</h2>
@@ -135,15 +172,51 @@ const AdminMessagesPage = () => {
                 </div>
               </div>
 
-              <div className="bg-dark-800/50 rounded-xl p-10">
+              <div className="bg-dark-800/50 rounded-xl p-10 mb-6">
                 <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap">{selected.message}</p>
               </div>
 
-              <div className="mt-4 flex gap-3">
-                <a href={`mailto:${selected.email}?subject=Re: ${selected.subject}`} className="btn-primary text-sm gap-2">
-                  <FaEnvelope size={12} /> Reply via Email
-                </a>
-              </div>
+              {!isReplying ? (
+                <div className="flex gap-3">
+                  <button onClick={() => setIsReplying(true)} className="btn-primary text-sm gap-2">
+                    <FaEnvelope size={12} /> Reply to {selected.name.split(' ')[0]}
+                  </button>
+                </div>
+              ) : (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-dark-800 p-4 rounded-xl border border-dark-700">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-white">Write a reply</h3>
+                    <button onClick={() => setIsReplying(false)} className="text-dark-400 hover:text-white transition-colors">
+                      <FaTimes size={14} />
+                    </button>
+                  </div>
+                  <textarea
+                    rows="5"
+                    className="input-field mb-3 text-sm"
+                    placeholder="Type your reply here... (will be sent as an email)"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    disabled={sendingReply}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => setIsReplying(false)} 
+                      className="px-4 py-2 text-sm text-dark-400 hover:text-white transition-colors"
+                      disabled={sendingReply}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={handleSendReply} 
+                      className="btn-primary text-sm gap-2"
+                      disabled={sendingReply}
+                    >
+                      {sendingReply ? <Spinner size="sm" /> : <FaPaperPlane size={12} />}
+                      {sendingReply ? 'Sending...' : 'Send Reply'}
+                    </button>
+                  </div>
+                </motion.div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-dark-500">
