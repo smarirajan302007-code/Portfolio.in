@@ -57,7 +57,7 @@ const ContactPage = () => {
       };
 
       await contactAPI.send(payload);
-      toast.success('Message sent successfully! I\'ll get back to you soon.');
+      toast.success('Message sent successfully! Please check your email within 24 to 48 hours for my reply.');
       setForm({ name: '', email: '', subject: '', message: '' });
       setSent(true);
       setTimeout(() => setSent(false), 5000);
@@ -169,7 +169,7 @@ const ContactPage = () => {
                   <FaPaperPlane className="text-green-400 text-2xl" />
                 </div>
                 <h4 className="text-white font-bold text-xl mb-2">Message Sent! 🎉</h4>
-                <p className="text-dark-400 text-sm">Thanks for reaching out. I'll get back to you within 24-48 hours.</p>
+                <p className="text-dark-400 text-sm">Message sent successfully! Please check your email within 24 to 48 hours for my reply.</p>
               </motion.div>
             ) : (
               <form onSubmit={handleSubmit} className="flex flex-col gap-8">

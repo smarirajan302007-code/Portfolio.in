@@ -147,8 +147,8 @@ const AdminMessagesPage = () => {
     try {
       if (editingReply) {
         // Edit Mode
-        const res = await contactAPI.editReply(editingReply.msgId, editingReply.replyId, { message: replyText });
-        toast.success('Reply updated!');
+        const res = await contactAPI.editReply(editingReply.msgId, editingReply.replyId, { message: replyText, subject: editingReply.subject });
+        toast.success('Reply updated and email resent!');
         setMessages(msgs => msgs.map(m => {
           if (m._id === editingReply.msgId) {
             return {
@@ -189,7 +189,11 @@ const AdminMessagesPage = () => {
   };
 
   const startEditReply = (reply) => {
-    setEditingReply({ msgId: reply.msgId, replyId: reply._id });
+    // Find the latest subject for this group to pass to the backend
+    const userMessages = groupedGroups.find(g => g.email === selectedEmail)?.chat.filter(c => c.type === 'user') || [];
+    const latestSubject = userMessages[userMessages.length - 1]?.subject || 'Contact Message';
+
+    setEditingReply({ msgId: reply.msgId, replyId: reply._id, subject: latestSubject });
     setReplyText(reply.message);
   };
 

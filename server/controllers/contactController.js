@@ -216,7 +216,7 @@ const replyToMessage = async (req, res, next) => {
  */
 const editReply = async (req, res, next) => {
   try {
-    const { message } = req.body;
+    const { message, subject: frontendSubject } = req.body;
     if (!message) {
       return res.status(400).json({ success: false, message: 'Reply message is required' });
     }
@@ -231,12 +231,21 @@ const editReply = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Reply not found' });
     }
 
-    const { encrypt } = require('../utils/encryption');
+    const { encrypt, decrypt } = require('../utils/encryption');
+    
+    // Decrypt fields to send the email
+    const name = decrypt(contactMessage.name);
+    const email = decrypt(contactMessage.email);
+    const subject = frontendSubject || 'Updated Reply';
+
+    const { sendReplyEmail } = require('../services/emailService');
+    await sendReplyEmail({ name, email, subject: `Correction: ${subject}`, replyMessage: message });
+
     reply.message = encrypt(message);
     
     await contactMessage.save();
 
-    res.json({ success: true, message: 'Reply updated successfully', reply: { _id: reply._id, message, sentAt: reply.sentAt } });
+    res.json({ success: true, message: 'Reply updated and resent successfully', reply: { _id: reply._id, message, sentAt: reply.sentAt } });
   } catch (error) {
     next(error);
   }
