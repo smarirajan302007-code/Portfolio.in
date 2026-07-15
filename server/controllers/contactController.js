@@ -1,5 +1,6 @@
 const ContactMessage = require('../models/ContactMessage');
 const { sendContactNotification, sendContactAutoReply } = require('../services/emailService');
+const { encrypt, decrypt } = require('../utils/encryption');
 
 /**
  * @desc    Send contact message (public)
@@ -20,12 +21,12 @@ const sendMessage = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Invalid email address' });
     }
 
-    // Save message to DB
+    // Save message to DB (Encrypted)
     const contactMessage = await ContactMessage.create({
-      name,
-      email,
-      subject,
-      message,
+      name: encrypt(name),
+      email: encrypt(email),
+      subject: encrypt(subject),
+      message: encrypt(message),
       ipAddress: req.ip,
     });
 
@@ -61,11 +62,22 @@ const getMessages = async (req, res, next) => {
     const messages = await ContactMessage.find(filter).sort({ createdAt: -1 });
     const unreadCount = await ContactMessage.countDocuments({ isRead: false });
 
+    const decryptedMessages = messages.map(msg => {
+      const obj = msg.toObject();
+      return {
+        ...obj,
+        name: decrypt(obj.name),
+        email: decrypt(obj.email),
+        subject: decrypt(obj.subject),
+        message: decrypt(obj.message),
+      };
+    });
+
     res.json({
       success: true,
-      count: messages.length,
+      count: decryptedMessages.length,
       unreadCount,
-      data: messages,
+      data: decryptedMessages,
     });
   } catch (error) {
     next(error);
