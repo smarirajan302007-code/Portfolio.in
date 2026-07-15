@@ -73,12 +73,23 @@ const AdminMessagesPage = () => {
     }
     setSendingReply(true);
     try {
-      await contactAPI.reply(selected._id, { 
+      const res = await contactAPI.reply(selected._id, { 
         message: replyText,
         subject: selected.subject
       });
       toast.success('Reply sent successfully via email!');
-      setIsReplying(false);
+      
+      // Immediately update local state to show the new reply bubble
+      const newReply = res.data.reply;
+      const updatedMessages = messages.map(m => {
+        if (m._id === selected._id) {
+          return { ...m, replies: [...(m.replies || []), newReply] };
+        }
+        return m;
+      });
+      setMessages(updatedMessages);
+      setSelected({ ...selected, replies: [...(selected.replies || []), newReply] });
+      
       setReplyText('');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send reply');
@@ -122,7 +133,7 @@ const AdminMessagesPage = () => {
                 <button
                   key={msg._id}
                   onClick={() => handleSelect(msg)}
-                  className={`w-full text-left p-10 rounded-xl hover:bg-dark-800/50 transition-colors border ${selected?._id === msg._id ? 'bg-dark-800/80 border-green-400/50 shadow-glass' : 'border-transparent'}`}
+                  className={`w-full text-left p-4 rounded-xl hover:bg-dark-800/50 transition-colors border ${selected?._id === msg._id ? 'bg-dark-800/80 border-green-400/50 shadow-glass' : 'border-transparent'}`}
                 >
                   <div className="flex items-start gap-2">
                     <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${msg.isRead ? 'bg-dark-600' : 'bg-green-400'}`} />
@@ -141,87 +152,87 @@ const AdminMessagesPage = () => {
           )}
         </div>
 
-        {/* Message detail */}
-        <div className="lg:col-span-3 glass-card flex flex-col overflow-hidden">
+        {/* Message detail (Chat UI) */}
+        <div className="lg:col-span-3 glass-card flex flex-col overflow-hidden bg-dark-950">
           {selected ? (
-            <div className="flex-1 overflow-y-auto p-6 scrollbar-hidden">
-              <div className="flex items-start justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-white font-bold text-lg">{selected.subject}</h2>
-                  <div className="flex items-center gap-3 mt-2 text-dark-400 text-sm">
-                    <span className="flex items-center gap-1.5">
-                      <div className="w-7 h-7 bg-dark-700 rounded-full flex items-center justify-center text-xs font-bold">
-                        {selected.name[0]?.toUpperCase()}
-                      </div>
-                      {selected.name}
-                    </span>
-                    <span>·</span>
+            <>
+              {/* Chat Header */}
+              <div className="p-4 bg-dark-900 border-b border-dark-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                    {selected.name[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 className="text-white font-bold text-sm">{selected.name}</h2>
                     <a href={`mailto:${selected.email}`} className="text-green-400 hover:underline text-xs">{selected.email}</a>
                   </div>
-                  <p className="text-dark-500 text-xs mt-1">{formatDateTime(selected.createdAt)}</p>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2">
                   {!selected.isRead && (
-                    <button onClick={() => handleMarkRead(selected._id)} className="p-2 text-dark-400 hover:text-green-400 rounded-lg hover:bg-dark-700 transition-colors" title="Mark as read">
+                    <button onClick={() => handleMarkRead(selected._id)} className="p-2 text-dark-400 hover:text-green-400 rounded-lg hover:bg-dark-800 transition-colors" title="Mark as read">
                       <FaEnvelopeOpen size={14} />
                     </button>
                   )}
-                  <button onClick={() => triggerDelete(selected._id)} className="p-2 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-700 transition-colors" title="Delete">
+                  <button onClick={() => triggerDelete(selected._id)} className="p-2 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete">
                     <FaTrash size={14} />
                   </button>
                 </div>
               </div>
 
-              <div className="bg-dark-800/50 rounded-xl p-10 mb-6">
-                <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap">{selected.message}</p>
+              {/* Chat Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dark-950/50 scrollbar-hidden">
+                {/* Initial User Message */}
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-4 shadow-sm">
+                    <div className="text-green-400 text-xs font-bold mb-1 border-b border-dark-700 pb-1">{selected.subject}</div>
+                    <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap">{selected.message}</p>
+                    <p className="text-dark-500 text-[10px] mt-2 text-right">{formatDateTime(selected.createdAt)}</p>
+                  </div>
+                </div>
+
+                {/* Replies */}
+                {selected.replies?.map((reply, index) => (
+                  <div key={index} className="flex justify-end">
+                    <div className="max-w-[80%] bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-4 shadow-sm">
+                      <p className="text-green-50 text-sm leading-relaxed whitespace-pre-wrap">{reply.message}</p>
+                      <p className="text-green-500/60 text-[10px] mt-2 text-right">{formatDateTime(reply.sentAt)}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              {!isReplying ? (
-                <div className="flex gap-3">
-                  <button onClick={() => setIsReplying(true)} className="btn-primary text-sm gap-2">
-                    <FaEnvelope size={12} /> Reply to {selected.name.split(' ')[0]}
-                  </button>
-                </div>
-              ) : (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-dark-800 p-4 rounded-xl border border-dark-700">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-sm font-semibold text-white">Write a reply</h3>
-                    <button onClick={() => setIsReplying(false)} className="text-dark-400 hover:text-white transition-colors">
-                      <FaTimes size={14} />
-                    </button>
-                  </div>
+              {/* Chat Input */}
+              <div className="p-4 bg-dark-900 border-t border-dark-800 shrink-0">
+                <div className="flex gap-2">
                   <textarea
-                    rows="5"
-                    className="input-field mb-3 text-sm"
-                    placeholder="Type your reply here... (will be sent as an email)"
+                    rows="2"
+                    className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-4 py-3 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-green-400 resize-none"
+                    placeholder="Type a reply to send via email..."
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
                     disabled={sendingReply}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendReply();
+                      }
+                    }}
                   />
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={() => setIsReplying(false)} 
-                      className="px-4 py-2 text-sm text-dark-400 hover:text-white transition-colors"
-                      disabled={sendingReply}
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      onClick={handleSendReply} 
-                      className="btn-primary text-sm gap-2"
-                      disabled={sendingReply}
-                    >
-                      {sendingReply ? <Spinner size="sm" /> : <FaPaperPlane size={12} />}
-                      {sendingReply ? 'Sending...' : 'Send Reply'}
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-            </div>
+                  <button 
+                    onClick={handleSendReply} 
+                    className="w-12 h-12 rounded-full bg-green-400 text-dark-950 flex items-center justify-center hover:bg-green-300 transition-colors shrink-0 disabled:opacity-50"
+                    disabled={sendingReply || !replyText.trim()}
+                    title="Send Reply"
+                  >
+                    {sendingReply ? <Spinner size="sm" /> : <FaPaperPlane size={16} />}
+                  </button>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-dark-500">
-              <FaEnvelope size={40} className="mb-3 text-dark-700" />
-              <p className="text-sm">Select a message to read</p>
+              <FaEnvelope size={40} className="mb-3 text-dark-800" />
+              <p className="text-sm">Select a message to view the chat</p>
             </div>
           )}
         </div>

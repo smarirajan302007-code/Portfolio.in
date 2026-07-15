@@ -62,16 +62,19 @@ const getMessages = async (req, res, next) => {
     const messages = await ContactMessage.find(filter).sort({ createdAt: -1 });
     const unreadCount = await ContactMessage.countDocuments({ isRead: false });
 
-    const decryptedMessages = messages.map(msg => {
-      const obj = msg.toObject();
-      return {
-        ...obj,
-        name: decrypt(obj.name),
-        email: decrypt(obj.email),
-        subject: decrypt(obj.subject),
-        message: decrypt(obj.message),
-      };
-    });
+    const decryptedMessages = messages.map(msg => ({
+      _id: msg._id,
+      name: decrypt(msg.name),
+      email: decrypt(msg.email),
+      subject: decrypt(msg.subject),
+      message: decrypt(msg.message),
+      isRead: msg.isRead,
+      createdAt: msg.createdAt,
+      replies: msg.replies ? msg.replies.map(reply => ({
+        message: decrypt(reply.message),
+        sentAt: reply.sentAt
+      })) : []
+    }));
 
     res.json({
       success: true,
@@ -179,13 +182,20 @@ const replyToMessage = async (req, res, next) => {
     const { sendReplyEmail } = require('../services/emailService');
     await sendReplyEmail({ name, email, subject, replyMessage: message });
 
+    // Save reply to database (AES encrypted)
+    const { encrypt } = require('../utils/encryption');
+    contactMessage.replies.push({
+      message: encrypt(message),
+      sentAt: new Date()
+    });
+
     // Mark as read if not already
     if (!contactMessage.isRead) {
       contactMessage.isRead = true;
-      await contactMessage.save();
     }
+    await contactMessage.save();
 
-    res.json({ success: true, message: 'Reply sent successfully' });
+    res.json({ success: true, message: 'Reply sent successfully', reply: { message, sentAt: new Date() } });
   } catch (error) {
     next(error);
   }

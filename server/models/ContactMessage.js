@@ -8,6 +8,12 @@ const contactMessageSchema = new mongoose.Schema(
     message: { type: String, required: true },
     isRead: { type: Boolean, default: false },
     ipAddress: { type: String, default: '' },
+    replies: [
+      {
+        message: { type: String, required: true },
+        sentAt: { type: Date, default: Date.now }
+      }
+    ]
   },
   { timestamps: true }
 );
