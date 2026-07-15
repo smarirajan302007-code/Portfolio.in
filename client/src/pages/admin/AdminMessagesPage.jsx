@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox, FaPaperPlane, FaTimes } from 'react-icons/fa';
 import { contactAPI } from '../../services/api';
 import { Spinner, EmptyState, BackButton, ConfirmModal } from '../../components/ui/shared';
-import { formatDate } from '../../utils/constants';
+import { formatDate, formatDateTime } from '../../utils/constants';
 import toast from 'react-hot-toast';
 import { decryptMessage } from '../../utils/encryption';
 
@@ -129,7 +129,7 @@ const AdminMessagesPage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className={`text-sm font-medium truncate ${msg.isRead ? 'text-dark-300' : 'text-white'}`}>{msg.name}</p>
-                        <p className="text-dark-500 text-xs whitespace-nowrap">{new Date(msg.createdAt).toLocaleDateString()}</p>
+                        <p className="text-dark-500 text-[10px] whitespace-nowrap">{formatDateTime(msg.createdAt)}</p>
                       </div>
                       <p className="text-dark-400 text-xs truncate">{msg.subject}</p>
                       <p className="text-dark-600 text-xs truncate mt-0.5">{msg.message.slice(0, 60)}...</p>
@@ -158,7 +158,7 @@ const AdminMessagesPage = () => {
                     <span>·</span>
                     <a href={`mailto:${selected.email}`} className="text-green-400 hover:underline text-xs">{selected.email}</a>
                   </div>
-                  <p className="text-dark-500 text-xs mt-1">{formatDate(selected.createdAt)}</p>
+                  <p className="text-dark-500 text-xs mt-1">{formatDateTime(selected.createdAt)}</p>
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                   {!selected.isRead && (
