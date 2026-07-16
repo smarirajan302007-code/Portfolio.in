@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox, FaPaperPlane, FaTimes, FaEdit } from 'react-icons/fa';
+import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox, FaPaperPlane, FaTimes, FaEdit, FaCheckSquare } from 'react-icons/fa';
 import { contactAPI } from '../../services/api';
 import { Spinner, EmptyState, BackButton, ConfirmModal } from '../../components/ui/shared';
 import { formatDateTime } from '../../utils/constants';
@@ -15,7 +15,10 @@ const AdminMessagesPage = () => {
 
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
-  const [editingReply, setEditingReply] = useState(null); // { msgId, replyId, text }
+  const [editingReply, setEditingReply] = useState(null); // { msgId, replyId, text, subject }
+
+  // Bulk selection state
+  const [selectedForDelete, setSelectedForDelete] = useState([]);
 
   const fetchMessages = () => {
     setLoading(true);
@@ -96,24 +99,62 @@ const AdminMessagesPage = () => {
 
   const [deleteEmail, setDeleteEmail] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isBulkDelete, setIsBulkDelete] = useState(false);
 
   const triggerDelete = (email) => {
     setDeleteEmail(email);
+    setIsBulkDelete(false);
+    setShowConfirm(true);
+  };
+
+  const triggerBulkDelete = () => {
+    if (selectedForDelete.length === 0) return;
+    setIsBulkDelete(true);
     setShowConfirm(true);
   };
 
   const handleDelete = async () => {
-    if (!deleteEmail) return;
-    const groupToDelete = groupedGroups.find(g => g.email === deleteEmail);
-    if (!groupToDelete) return;
+    if (isBulkDelete) {
+      // Bulk delete logic
+      try {
+        const allIdsToDelete = [];
+        selectedForDelete.forEach(email => {
+          const group = groupedGroups.find(g => g.email === email);
+          if (group) allIdsToDelete.push(...group.ids);
+        });
 
-    try {
-      await Promise.all(groupToDelete.ids.map(id => contactAPI.delete(id)));
-      toast.success('Chat deleted');
-      setMessages((msgs) => msgs.filter((m) => m.email !== deleteEmail));
-      if (selectedEmail === deleteEmail) setSelectedEmail(null);
-    } catch { toast.error('Failed to delete chat'); }
-    finally { setShowConfirm(false); setDeleteEmail(null); }
+        await Promise.all(allIdsToDelete.map(id => contactAPI.delete(id)));
+        toast.success(`${selectedForDelete.length} chat(s) deleted`);
+        
+        setMessages(msgs => msgs.filter(m => !selectedForDelete.includes(m.email)));
+        if (selectedForDelete.includes(selectedEmail)) setSelectedEmail(null);
+        setSelectedForDelete([]);
+      } catch { toast.error('Failed to delete chats'); }
+      finally { setShowConfirm(false); setIsBulkDelete(false); }
+    } else {
+      // Single delete logic
+      if (!deleteEmail) return;
+      const groupToDelete = groupedGroups.find(g => g.email === deleteEmail);
+      if (!groupToDelete) return;
+
+      try {
+        await Promise.all(groupToDelete.ids.map(id => contactAPI.delete(id)));
+        toast.success('Chat deleted');
+        setMessages((msgs) => msgs.filter((m) => m.email !== deleteEmail));
+        if (selectedEmail === deleteEmail) setSelectedEmail(null);
+        setSelectedForDelete(prev => prev.filter(e => e !== deleteEmail));
+      } catch { toast.error('Failed to delete chat'); }
+      finally { setShowConfirm(false); setDeleteEmail(null); }
+    }
+  };
+
+  const toggleSelectForDelete = (email, e) => {
+    e.stopPropagation();
+    if (selectedForDelete.includes(email)) {
+      setSelectedForDelete(prev => prev.filter(item => item !== email));
+    } else {
+      setSelectedForDelete(prev => [...prev, email]);
+    }
   };
 
   const handleDeleteReply = async (msgId, replyId) => {
@@ -215,26 +256,36 @@ const AdminMessagesPage = () => {
   }, [selectedGroup?.chat]);
 
   return (
-    <div className="space-y-4 max-w-5xl">
-      <BackButton fallbackPath="/admin/dashboard" className="mb-1" />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Contact Messages</h1>
-          {unreadCount > 0 && (
-            <p className="text-green-400 text-sm mt-1">{unreadCount} unread chat{unreadCount > 1 ? 's' : ''}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          {['all', 'unread', 'read'].map((f) => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${filter === f ? 'bg-green-400 text-dark-950' : 'bg-dark-800 text-dark-400 hover:text-white'}`}>
-              {f}
-            </button>
-          ))}
+    <div className="flex flex-col gap-8 w-full">
+      <div className="flex flex-col gap-4">
+        <BackButton fallbackPath="/admin/dashboard" className="mb-1" />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">Contact Messages</h1>
+            {unreadCount > 0 && (
+              <p className="text-green-400 text-sm mt-1">{unreadCount} unread chat{unreadCount > 1 ? 's' : ''}</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {selectedForDelete.length > 0 && (
+              <button 
+                onClick={triggerBulkDelete}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-4"
+              >
+                <FaTrash size={12} /> Delete Selected ({selectedForDelete.length})
+              </button>
+            )}
+            {['all', 'unread', 'read'].map((f) => (
+              <button key={f} onClick={() => setFilter(f)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${filter === f ? 'bg-green-400 text-dark-950' : 'bg-dark-800 text-dark-400 hover:text-white'}`}>
+                {f}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 h-[600px]">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[700px]">
         {/* Message list */}
         <div className="lg:col-span-2 glass-card overflow-y-auto scrollbar-hidden">
           {loading ? (
@@ -242,27 +293,35 @@ const AdminMessagesPage = () => {
           ) : filteredGroups.length === 0 ? (
             <EmptyState message="No chats found" icon={FaInbox} />
           ) : (
-            <div className="flex flex-col gap-2 p-2">
+            <div className="flex flex-col gap-3 p-4">
               {filteredGroups.map((group) => (
-                <button
-                  key={group.email}
+                <div 
+                  key={group.email} 
+                  className={`flex items-start gap-3 p-4 rounded-xl transition-colors border cursor-pointer ${selectedEmail === group.email ? 'bg-dark-800/80 border-green-400/50 shadow-glass' : 'border-transparent hover:bg-dark-800/50'}`}
                   onClick={() => handleSelect(group)}
-                  className={`w-full text-left p-4 rounded-xl hover:bg-dark-800/50 transition-colors border ${selectedEmail === group.email ? 'bg-dark-800/80 border-green-400/50 shadow-glass' : 'border-transparent'}`}
                 >
-                  <div className="flex items-start gap-2">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${group.isRead ? 'bg-dark-600' : 'bg-green-400'}`} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`text-sm font-medium truncate ${group.isRead ? 'text-dark-300' : 'text-white'}`}>{group.name}</p>
-                        <p className="text-dark-500 text-[10px] whitespace-nowrap">{formatDateTime(group.createdAt)}</p>
-                      </div>
-                      <p className="text-dark-400 text-xs truncate">{group.email}</p>
-                      <p className="text-dark-600 text-xs truncate mt-0.5">
-                        {group.chat[group.chat.length - 1]?.message?.slice(0, 50)}...
-                      </p>
+                  <button 
+                    onClick={(e) => toggleSelectForDelete(group.email, e)}
+                    className="mt-1 flex-shrink-0 text-dark-400 hover:text-white transition-colors"
+                  >
+                    {selectedForDelete.includes(group.email) ? (
+                      <FaCheckSquare className="text-green-400" size={16} />
+                    ) : (
+                      <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                    )}
+                  </button>
+                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${group.isRead ? 'bg-dark-600' : 'bg-green-400'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-sm font-medium truncate ${group.isRead ? 'text-dark-300' : 'text-white'}`}>{group.name}</p>
+                      <p className="text-dark-500 text-[10px] whitespace-nowrap">{formatDateTime(group.createdAt)}</p>
                     </div>
+                    <p className="text-dark-400 text-xs truncate">{group.email}</p>
+                    <p className="text-dark-600 text-xs truncate mt-0.5">
+                      {group.chat[group.chat.length - 1]?.message?.slice(0, 50)}...
+                    </p>
                   </div>
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -273,69 +332,69 @@ const AdminMessagesPage = () => {
           {selectedGroup ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 bg-dark-900 border-b border-dark-800 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-dark-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
+              <div className="p-6 bg-dark-900 border-b border-dark-800 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-dark-700 rounded-full flex items-center justify-center text-sm font-bold text-white">
                     {selectedGroup.name[0]?.toUpperCase()}
                   </div>
                   <div>
-                    <h2 className="text-white font-bold text-sm">{selectedGroup.name}</h2>
-                    <a href={`mailto:${selectedGroup.email}`} className="text-green-400 hover:underline text-xs">{selectedGroup.email}</a>
+                    <h2 className="text-white font-bold text-base">{selectedGroup.name}</h2>
+                    <a href={`mailto:${selectedGroup.email}`} className="text-green-400 hover:underline text-sm">{selectedGroup.email}</a>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => triggerDelete(selectedGroup.email)} className="p-2 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete Chat">
-                    <FaTrash size={14} />
+                  <button onClick={() => triggerDelete(selectedGroup.email)} className="p-3 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete Chat">
+                    <FaTrash size={16} />
                   </button>
                 </div>
               </div>
 
               {/* Chat Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dark-950/50 scrollbar-hidden">
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-dark-950/50 scrollbar-hidden">
                 {selectedGroup.chat.map((item, index) => (
                   <div key={item._id || index} className={`flex ${item.type === 'user' ? 'justify-start' : 'justify-end'} group`}>
                     {item.type === 'user' ? (
-                      <div className="max-w-[80%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-4 shadow-sm">
-                        <div className="text-green-400 text-xs font-bold mb-1 border-b border-dark-700 pb-1 break-words break-all">{item.subject}</div>
-                        <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
-                        <p className="text-dark-500 text-[10px] mt-2 text-right">{formatDateTime(item.sentAt)}</p>
+                      <div className="max-w-[80%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-5 shadow-sm">
+                        <div className="text-green-400 text-sm font-bold mb-2 border-b border-dark-700 pb-2 break-words break-all">{item.subject}</div>
+                        <p className="text-dark-200 text-base leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
+                        <p className="text-dark-500 text-xs mt-3 text-right">{formatDateTime(item.sentAt)}</p>
                       </div>
                     ) : (
                       <div className="max-w-[80%] flex flex-col items-end relative">
-                        <div className="absolute -top-3 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-dark-900 border border-dark-700 rounded-lg shadow-lg overflow-hidden z-10">
-                          <button onClick={() => startEditReply(item)} className="p-1.5 text-dark-400 hover:text-white hover:bg-dark-700" title="Edit">
-                            <FaEdit size={10} />
+                        <div className="absolute -top-4 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-dark-900 border border-dark-700 rounded-lg shadow-lg overflow-hidden z-10">
+                          <button onClick={() => startEditReply(item)} className="p-2 text-dark-400 hover:text-white hover:bg-dark-700" title="Edit">
+                            <FaEdit size={12} />
                           </button>
-                          <button onClick={() => handleDeleteReply(item.msgId, item._id)} className="p-1.5 text-dark-400 hover:text-red-400 hover:bg-dark-700" title="Delete">
-                            <FaTrash size={10} />
+                          <button onClick={() => handleDeleteReply(item.msgId, item._id)} className="p-2 text-dark-400 hover:text-red-400 hover:bg-dark-700" title="Delete">
+                            <FaTrash size={12} />
                           </button>
                         </div>
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-4 shadow-sm relative">
-                          <div className="text-green-400 text-xs font-bold mb-1 border-b border-green-500/20 pb-1">Admin</div>
-                          <p className="text-green-50 text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
-                          <p className="text-green-500/60 text-[10px] mt-2 text-right">{formatDateTime(item.sentAt)}</p>
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-5 shadow-sm relative">
+                          <div className="text-green-400 text-sm font-bold mb-2 border-b border-green-500/20 pb-2">Admin</div>
+                          <p className="text-green-50 text-base leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
+                          <p className="text-green-500/60 text-xs mt-3 text-right">{formatDateTime(item.sentAt)}</p>
                         </div>
                       </div>
                     )}
                   </div>
                 ))}
-                <div ref={messagesEndRef} className="pb-2" />
+                <div ref={messagesEndRef} className="pb-4" />
               </div>
 
               {/* Chat Input */}
-              <div className="p-4 bg-dark-900 border-t border-dark-800 shrink-0">
+              <div className="p-6 bg-dark-900 border-t border-dark-800 shrink-0">
                 {editingReply && (
-                  <div className="flex items-center justify-between mb-2 px-2">
-                    <span className="text-xs text-green-400 font-medium">Editing reply...</span>
-                    <button onClick={cancelEdit} className="text-dark-400 hover:text-white text-xs flex items-center gap-1">
+                  <div className="flex items-center justify-between mb-3 px-2">
+                    <span className="text-sm text-green-400 font-medium">Editing reply...</span>
+                    <button onClick={cancelEdit} className="text-dark-400 hover:text-white text-sm flex items-center gap-1">
                       <FaTimes /> Cancel
                     </button>
                   </div>
                 )}
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <textarea
                     rows="2"
-                    className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-4 py-3 text-sm text-white placeholder-dark-500 focus:outline-none focus:border-green-400 resize-none"
+                    className="flex-1 bg-dark-800 border border-dark-700 rounded-xl px-5 py-4 text-base text-white placeholder-dark-500 focus:outline-none focus:border-green-400 resize-none"
                     placeholder={editingReply ? "Update your reply..." : "Type a reply to send via email..."}
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
@@ -349,19 +408,19 @@ const AdminMessagesPage = () => {
                   />
                   <button 
                     onClick={handleSendReply} 
-                    className="w-12 h-12 rounded-full bg-green-400 text-dark-950 flex items-center justify-center hover:bg-green-300 transition-colors shrink-0 disabled:opacity-50"
+                    className="w-14 h-14 rounded-full bg-green-400 text-dark-950 flex items-center justify-center hover:bg-green-300 transition-colors shrink-0 disabled:opacity-50"
                     disabled={sendingReply || !replyText.trim()}
                     title={editingReply ? "Save Edit" : "Send Reply"}
                   >
-                    {sendingReply ? <Spinner size="sm" /> : <FaPaperPlane size={16} />}
+                    {sendingReply ? <Spinner size="sm" /> : <FaPaperPlane size={20} />}
                   </button>
                 </div>
               </div>
             </>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-dark-500">
-              <FaEnvelope size={40} className="mb-3 text-dark-800" />
-              <p className="text-sm">Select a user to view the chat</p>
+              <FaEnvelope size={50} className="mb-4 text-dark-800" />
+              <p className="text-base">Select a user to view the chat</p>
             </div>
           )}
         </div>
@@ -369,10 +428,12 @@ const AdminMessagesPage = () => {
 
       <ConfirmModal
         isOpen={showConfirm}
-        onClose={() => setShowConfirm(false)}
+        onClose={() => { setShowConfirm(false); setIsBulkDelete(false); }}
         onConfirm={handleDelete}
-        title="Delete Chat History"
-        message="Are you sure to permanently delete all messages with this user? This action cannot be undone."
+        title={isBulkDelete ? "Delete Selected Chats" : "Delete Chat History"}
+        message={isBulkDelete 
+          ? `Are you sure you want to permanently delete the ${selectedForDelete.length} selected chat(s)? This action cannot be undone.` 
+          : "Are you sure to permanently delete all messages with this user? This action cannot be undone."}
       />
     </div>
   );
