@@ -15,12 +15,12 @@ const AdminLoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin/dashboard';
 
-  // Redirect to dashboard if already logged in
+  // Force a fresh login every time the admin visits the login page from the public dashboard
   useEffect(() => {
     if (admin) {
-      navigate(from, { replace: true });
+      logout();
     }
-  }, [admin, navigate, from]);
+  }, [admin, logout]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
