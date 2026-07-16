@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaTrash, FaEnvelope, FaEnvelopeOpen, FaInbox, FaPaperPlane, FaTimes, FaEdit } from 'react-icons/fa';
 import { contactAPI } from '../../services/api';
@@ -204,6 +204,16 @@ const AdminMessagesPage = () => {
 
   const unreadCount = groupedGroups.filter((g) => !g.isRead).length;
 
+  const messagesEndRef = React.useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedGroup?.chat]);
+
   return (
     <div className="space-y-4 max-w-5xl">
       <BackButton fallbackPath="/admin/dashboard" className="mb-1" />
@@ -286,8 +296,8 @@ const AdminMessagesPage = () => {
                   <div key={item._id || index} className={`flex ${item.type === 'user' ? 'justify-start' : 'justify-end'} group`}>
                     {item.type === 'user' ? (
                       <div className="max-w-[80%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-4 shadow-sm">
-                        <div className="text-green-400 text-xs font-bold mb-1 border-b border-dark-700 pb-1">{item.subject}</div>
-                        <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap">{item.message}</p>
+                        <div className="text-green-400 text-xs font-bold mb-1 border-b border-dark-700 pb-1 break-words break-all">{item.subject}</div>
+                        <p className="text-dark-200 text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
                         <p className="text-dark-500 text-[10px] mt-2 text-right">{formatDateTime(item.sentAt)}</p>
                       </div>
                     ) : (
@@ -302,13 +312,14 @@ const AdminMessagesPage = () => {
                         </div>
                         <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-4 shadow-sm relative">
                           <div className="text-green-400 text-xs font-bold mb-1 border-b border-green-500/20 pb-1">Admin</div>
-                          <p className="text-green-50 text-sm leading-relaxed whitespace-pre-wrap">{item.message}</p>
+                          <p className="text-green-50 text-sm leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
                           <p className="text-green-500/60 text-[10px] mt-2 text-right">{formatDateTime(item.sentAt)}</p>
                         </div>
                       </div>
                     )}
                   </div>
                 ))}
+                <div ref={messagesEndRef} className="pb-2" />
               </div>
 
               {/* Chat Input */}
