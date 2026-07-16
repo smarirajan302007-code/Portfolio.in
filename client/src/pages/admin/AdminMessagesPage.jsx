@@ -100,21 +100,56 @@ const AdminMessagesPage = () => {
   const [deleteEmail, setDeleteEmail] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isBulkDelete, setIsBulkDelete] = useState(false);
+  const [isInnerBulkDelete, setIsInnerBulkDelete] = useState(false);
+  const [selectedInnerForDelete, setSelectedInnerForDelete] = useState([]);
 
   const triggerDelete = (email) => {
     setDeleteEmail(email);
     setIsBulkDelete(false);
+    setIsInnerBulkDelete(false);
     setShowConfirm(true);
   };
 
   const triggerBulkDelete = () => {
     if (selectedForDelete.length === 0) return;
     setIsBulkDelete(true);
+    setIsInnerBulkDelete(false);
+    setShowConfirm(true);
+  };
+
+  const triggerInnerBulkDelete = () => {
+    if (selectedInnerForDelete.length === 0) return;
+    setIsInnerBulkDelete(true);
+    setIsBulkDelete(false);
     setShowConfirm(true);
   };
 
   const handleDelete = async () => {
-    if (isBulkDelete) {
+    if (isInnerBulkDelete) {
+      try {
+        const userIds = selectedInnerForDelete.filter(id => selectedGroup?.chat.find(c => c._id === id)?.type === 'user');
+        const adminItems = selectedInnerForDelete.map(id => selectedGroup?.chat.find(c => c._id === id)).filter(c => c?.type === 'admin');
+
+        await Promise.all([
+          ...userIds.map(id => contactAPI.delete(id)),
+          ...adminItems.map(item => contactAPI.deleteReply(item.msgId, item._id))
+        ]);
+        
+        toast.success(`${selectedInnerForDelete.length} message(s) deleted`);
+        
+        setMessages(msgs => {
+          let updated = msgs.filter(m => !userIds.includes(m._id));
+          updated = updated.map(m => ({
+            ...m,
+            replies: m.replies ? m.replies.filter(r => !adminItems.find(a => a._id === r._id)) : []
+          }));
+          return updated;
+        });
+        
+        setSelectedInnerForDelete([]);
+      } catch { toast.error('Failed to delete messages'); }
+      finally { setShowConfirm(false); setIsInnerBulkDelete(false); }
+    } else if (isBulkDelete) {
       // Bulk delete logic
       try {
         const allIdsToDelete = [];
@@ -157,6 +192,14 @@ const AdminMessagesPage = () => {
     }
   };
 
+  const toggleInnerSelect = (id) => {
+    if (selectedInnerForDelete.includes(id)) {
+      setSelectedInnerForDelete(prev => prev.filter(item => item !== id));
+    } else {
+      setSelectedInnerForDelete(prev => [...prev, id]);
+    }
+  };
+
   const handleDeleteReply = async (msgId, replyId) => {
     if (!window.confirm('Delete this reply?')) return;
     try {
@@ -175,6 +218,7 @@ const AdminMessagesPage = () => {
     setSelectedEmail(group.email);
     setEditingReply(null);
     setReplyText('');
+    setSelectedInnerForDelete([]);
     handleMarkRead(group);
   };
 
@@ -343,7 +387,12 @@ const AdminMessagesPage = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => triggerDelete(selectedGroup.email)} className="p-3 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete Chat">
+                  {selectedInnerForDelete.length > 0 && (
+                    <button onClick={triggerInnerBulkDelete} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-2">
+                      <FaTrash size={12} /> Delete Selected ({selectedInnerForDelete.length})
+                    </button>
+                  )}
+                  <button onClick={() => triggerDelete(selectedGroup.email)} className="p-3 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete Entire Chat">
                     <FaTrash size={16} />
                   </button>
                 </div>
@@ -352,15 +401,29 @@ const AdminMessagesPage = () => {
               {/* Chat Body */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-dark-950/50 scrollbar-hidden">
                 {selectedGroup.chat.map((item, index) => (
-                  <div key={item._id || index} className={`flex ${item.type === 'user' ? 'justify-start' : 'justify-end'} group`}>
+                  <div key={item._id || index} className={`flex ${item.type === 'user' ? 'justify-start' : 'justify-end'} group items-center gap-3`}>
+                    
+                    {item.type === 'user' && (
+                      <button 
+                        onClick={() => toggleInnerSelect(item._id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-dark-400 hover:text-white"
+                      >
+                        {selectedInnerForDelete.includes(item._id) ? (
+                          <FaCheckSquare className="text-green-400" size={16} />
+                        ) : (
+                          <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                        )}
+                      </button>
+                    )}
+
                     {item.type === 'user' ? (
-                      <div className="max-w-[80%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-5 shadow-sm">
-                        <div className="text-green-400 text-sm font-bold mb-2 border-b border-dark-700 pb-2 break-words break-all">{item.subject}</div>
+                      <div className="max-w-[85%] bg-dark-800 border border-dark-700 rounded-2xl rounded-tl-sm p-6 shadow-sm">
+                        <div className="text-green-400 text-sm font-bold mb-3 border-b border-dark-700 pb-2 break-words break-all">{item.subject}</div>
                         <p className="text-dark-200 text-base leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
-                        <p className="text-dark-500 text-xs mt-3 text-right">{formatDateTime(item.sentAt)}</p>
+                        <p className="text-dark-500 text-xs mt-4 text-right">{formatDateTime(item.sentAt)}</p>
                       </div>
                     ) : (
-                      <div className="max-w-[80%] flex flex-col items-end relative">
+                      <div className="max-w-[85%] flex flex-col items-end relative">
                         <div className="absolute -top-4 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 bg-dark-900 border border-dark-700 rounded-lg shadow-lg overflow-hidden z-10">
                           <button onClick={() => startEditReply(item)} className="p-2 text-dark-400 hover:text-white hover:bg-dark-700" title="Edit">
                             <FaEdit size={12} />
@@ -369,12 +432,25 @@ const AdminMessagesPage = () => {
                             <FaTrash size={12} />
                           </button>
                         </div>
-                        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-5 shadow-sm relative">
-                          <div className="text-green-400 text-sm font-bold mb-2 border-b border-green-500/20 pb-2">Admin</div>
+                        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tr-sm p-6 shadow-sm relative">
+                          <div className="text-green-400 text-sm font-bold mb-3 border-b border-green-500/20 pb-2">Admin</div>
                           <p className="text-green-50 text-base leading-relaxed whitespace-pre-wrap break-words break-all">{item.message}</p>
-                          <p className="text-green-500/60 text-xs mt-3 text-right">{formatDateTime(item.sentAt)}</p>
+                          <p className="text-green-500/60 text-xs mt-4 text-right">{formatDateTime(item.sentAt)}</p>
                         </div>
                       </div>
+                    )}
+
+                    {item.type === 'admin' && (
+                      <button 
+                        onClick={() => toggleInnerSelect(item._id)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity text-dark-400 hover:text-white"
+                      >
+                        {selectedInnerForDelete.includes(item._id) ? (
+                          <FaCheckSquare className="text-green-400" size={16} />
+                        ) : (
+                          <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                        )}
+                      </button>
                     )}
                   </div>
                 ))}
@@ -428,12 +504,16 @@ const AdminMessagesPage = () => {
 
       <ConfirmModal
         isOpen={showConfirm}
-        onClose={() => { setShowConfirm(false); setIsBulkDelete(false); }}
+        onClose={() => { setShowConfirm(false); setIsBulkDelete(false); setIsInnerBulkDelete(false); }}
         onConfirm={handleDelete}
-        title={isBulkDelete ? "Delete Selected Chats" : "Delete Chat History"}
-        message={isBulkDelete 
+        title={isInnerBulkDelete ? "Delete Selected Messages" : isBulkDelete ? "Delete Selected Chats" : "Delete Chat History"}
+        message={
+          isInnerBulkDelete
+          ? `Are you sure you want to permanently delete the ${selectedInnerForDelete.length} selected message(s)? This action cannot be undone.`
+          : isBulkDelete 
           ? `Are you sure you want to permanently delete the ${selectedForDelete.length} selected chat(s)? This action cannot be undone.` 
-          : "Are you sure to permanently delete all messages with this user? This action cannot be undone."}
+          : "Are you sure to permanently delete all messages with this user? This action cannot be undone."
+        }
       />
     </div>
   );
