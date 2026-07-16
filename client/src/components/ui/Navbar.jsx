@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCode, FaBars, FaTimes, FaLock } from 'react-icons/fa';
+import { useAuth } from '../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { contactAPI } from '../../services/api';
 
 const navLinks = [
   { label: 'Home', to: '/' },
@@ -21,6 +24,19 @@ const Navbar = () => {
   const [activeSection, setActiveSection] = useState('/');
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { admin } = useAuth();
+  const { data: statsData } = useQuery({
+    queryKey: ['adminStatsNavbar'],
+    queryFn: async () => {
+      const res = await contactAPI.getStats();
+      return res.data.data;
+    },
+    enabled: !!admin,
+    refetchInterval: 10000 // Poll every 10 seconds for new messages when logged in
+  });
+  
+  const unreadCount = statsData?.unreadMessages || 0;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -137,9 +153,23 @@ const Navbar = () => {
                 Portfolio<span className="text-green-400">.</span>
               </span>
             </Link>
-            <Link to="/admin/login" className="text-dark-500 hover:text-green-400 transition-colors" title="Admin Login">
-              <FaLock size={14} />
-            </Link>
+            <div className="relative group/lock flex items-center">
+              <Link to="/admin/login" className="text-dark-500 hover:text-green-400 transition-colors relative" title="Admin Login">
+                <FaLock size={14} />
+                {admin && unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full z-10 animate-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
+              {admin && unreadCount > 0 && (
+                <div className="absolute top-full mt-3 -right-2 w-max bg-dark-900 border border-dark-800 rounded-lg p-2.5 opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
+                  <p className="text-xs text-white">
+                    <span className="text-green-400 font-bold">{unreadCount}</span> new message{unreadCount > 1 ? 's' : ''}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
         </div>

@@ -177,7 +177,7 @@ const AdminDashboard = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-dark-200 text-sm font-medium truncate">{msg.name}</p>
-                        <p className="text-dark-500 text-xs whitespace-nowrap">{formatDate(msg.createdAt)}</p>
+                        <p className="text-dark-500 text-[10px] whitespace-nowrap">{formatDateTime(msg.createdAt)}</p>
                       </div>
                       <p className="text-dark-400 text-xs truncate">{msg.subject}</p>
                     </div>
