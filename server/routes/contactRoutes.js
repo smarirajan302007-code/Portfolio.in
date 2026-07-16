@@ -4,7 +4,7 @@ const { sendMessage, getMessages, markAsRead, deleteMessage, getStats, replyToMe
 const { protect } = require('../middleware/auth');
 
 router.post('/', sendMessage);
-router.get('/stats', protect, getStats);
+router.get('/stats', getStats);
 router.get('/', protect, getMessages);
 router.put('/:id/read', protect, markAsRead);
 router.delete('/:id', protect, deleteMessage);

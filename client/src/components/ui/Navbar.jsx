@@ -32,8 +32,7 @@ const Navbar = () => {
       const res = await contactAPI.getStats();
       return res.data.data;
     },
-    enabled: !!admin,
-    refetchInterval: 10000 // Poll every 10 seconds for new messages when logged in
+    refetchInterval: 10000 // Poll every 10 seconds for new messages
   });
   
   const unreadCount = statsData?.unreadMessages || 0;
@@ -156,13 +155,13 @@ const Navbar = () => {
             <div className="relative group/lock flex items-center">
               <Link to="/admin/login" className="text-dark-500 hover:text-green-400 transition-colors relative" title={admin ? undefined : "Admin Login"}>
                 <FaLock size={14} />
-                {admin && unreadCount > 0 && (
+                {unreadCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full z-10 animate-pulse">
                     {unreadCount}
                   </span>
                 )}
               </Link>
-              {admin && unreadCount > 0 && (
+              {unreadCount > 0 && (
                 <div className="absolute top-full mt-3 -right-2 w-max bg-dark-900 border border-dark-800 rounded-lg p-2.5 opacity-0 group-hover/lock:opacity-100 transition-opacity pointer-events-none shadow-xl z-50">
                   <p className="text-xs text-white">
                     <span className="text-green-400 font-bold">{unreadCount}</span> new message{unreadCount > 1 ? 's' : ''}
