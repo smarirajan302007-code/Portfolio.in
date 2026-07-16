@@ -154,7 +154,7 @@ const Navbar = () => {
               </span>
             </Link>
             <div className="relative group/lock flex items-center">
-              <Link to={admin ? "/admin/dashboard" : "/admin/login"} className="text-dark-500 hover:text-green-400 transition-colors relative" title={admin ? undefined : "Admin Login"}>
+              <Link to="/admin/login" className="text-dark-500 hover:text-green-400 transition-colors relative" title={admin ? undefined : "Admin Login"}>
                 <FaLock size={14} />
                 {admin && unreadCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full z-10 animate-pulse">

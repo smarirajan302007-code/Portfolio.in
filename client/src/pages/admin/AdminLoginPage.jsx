@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FaEye, FaEyeSlash, FaCode, FaLock, FaEnvelope } from 'react-icons/fa';
@@ -9,10 +9,17 @@ const AdminLoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, admin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin/dashboard';
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (admin) {
+      navigate(from, { replace: true });
+    }
+  }, [admin, navigate, from]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
