@@ -314,14 +314,14 @@ const AdminMessagesPage = () => {
             {selectedForDelete.length > 0 && (
               <button 
                 onClick={triggerBulkDelete}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-4"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-4"
               >
-                <FaTrash size={12} /> Delete Selected ({selectedForDelete.length})
+                <FaTrash size={14} /> Delete Selected ({selectedForDelete.length})
               </button>
             )}
             {['all', 'unread', 'read'].map((f) => (
               <button key={f} onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${filter === f ? 'bg-green-400 text-dark-950' : 'bg-dark-800 text-dark-400 hover:text-white'}`}>
+                className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all ${filter === f ? 'bg-green-400 text-dark-950' : 'bg-dark-800 text-dark-400 hover:text-white'}`}>
                 {f}
               </button>
             ))}
@@ -329,7 +329,7 @@ const AdminMessagesPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[700px]">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 h-[750px]">
         {/* Message list */}
         <div className="lg:col-span-2 glass-card overflow-y-auto scrollbar-hidden">
           {loading ? (
@@ -337,11 +337,11 @@ const AdminMessagesPage = () => {
           ) : filteredGroups.length === 0 ? (
             <EmptyState message="No chats found" icon={FaInbox} />
           ) : (
-            <div className="flex flex-col gap-3 p-4">
+            <div className="flex flex-col gap-3 p-6">
               {filteredGroups.map((group) => (
                 <div 
                   key={group.email} 
-                  className={`flex items-start gap-3 p-4 rounded-xl transition-colors border cursor-pointer ${selectedEmail === group.email ? 'bg-dark-800/80 border-green-400/50 shadow-glass' : 'border-transparent hover:bg-dark-800/50'}`}
+                  className={`flex items-start gap-4 p-5 rounded-2xl transition-all border cursor-pointer ${selectedEmail === group.email ? 'bg-dark-800 border-green-400/50 shadow-glass' : 'border-dark-700/50 hover:bg-dark-800/60'}`}
                   onClick={() => handleSelect(group)}
                 >
                   <button 
@@ -349,19 +349,19 @@ const AdminMessagesPage = () => {
                     className="mt-1 flex-shrink-0 text-dark-400 hover:text-white transition-colors"
                   >
                     {selectedForDelete.includes(group.email) ? (
-                      <FaCheckSquare className="text-green-400" size={16} />
+                      <FaCheckSquare className="text-green-400" size={18} />
                     ) : (
-                      <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                      <div className="w-4 h-4 border border-dark-500 rounded-sm" />
                     )}
                   </button>
-                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${group.isRead ? 'bg-dark-600' : 'bg-green-400'}`} />
+                  <div className={`w-2.5 h-2.5 rounded-full mt-2 flex-shrink-0 ${group.isRead ? 'bg-dark-600' : 'bg-green-400'}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`text-sm font-medium truncate ${group.isRead ? 'text-dark-300' : 'text-white'}`}>{group.name}</p>
-                      <p className="text-dark-500 text-[10px] whitespace-nowrap">{formatDateTime(group.createdAt)}</p>
+                      <p className={`text-base font-bold truncate ${group.isRead ? 'text-dark-300' : 'text-white'}`}>{group.name}</p>
+                      <p className="text-dark-500 text-xs whitespace-nowrap">{formatDateTime(group.createdAt)}</p>
                     </div>
-                    <p className="text-dark-400 text-xs truncate">{group.email}</p>
-                    <p className="text-dark-600 text-xs truncate mt-0.5">
+                    <p className="text-dark-400 text-sm truncate">{group.email}</p>
+                    <p className="text-dark-600 text-sm truncate mt-1.5">
                       {group.chat[group.chat.length - 1]?.message?.slice(0, 50)}...
                     </p>
                   </div>
@@ -388,8 +388,8 @@ const AdminMessagesPage = () => {
                 </div>
                 <div className="flex gap-2">
                   {selectedInnerForDelete.length > 0 && (
-                    <button onClick={triggerInnerBulkDelete} className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-2">
-                      <FaTrash size={12} /> Delete Selected ({selectedInnerForDelete.length})
+                    <button onClick={triggerInnerBulkDelete} className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-all flex items-center gap-2 mr-2">
+                      <FaTrash size={14} /> Delete Selected ({selectedInnerForDelete.length})
                     </button>
                   )}
                   <button onClick={() => triggerDelete(selectedGroup.email)} className="p-3 text-dark-400 hover:text-red-400 rounded-lg hover:bg-dark-800 transition-colors" title="Delete Entire Chat">
@@ -406,12 +406,12 @@ const AdminMessagesPage = () => {
                     {item.type === 'user' && (
                       <button 
                         onClick={() => toggleInnerSelect(item._id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-dark-400 hover:text-white"
+                        className="transition-colors text-dark-400 hover:text-white"
                       >
                         {selectedInnerForDelete.includes(item._id) ? (
-                          <FaCheckSquare className="text-green-400" size={16} />
+                          <FaCheckSquare className="text-green-400" size={18} />
                         ) : (
-                          <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                          <div className="w-4 h-4 border border-dark-500 rounded-sm" />
                         )}
                       </button>
                     )}
@@ -443,12 +443,12 @@ const AdminMessagesPage = () => {
                     {item.type === 'admin' && (
                       <button 
                         onClick={() => toggleInnerSelect(item._id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity text-dark-400 hover:text-white"
+                        className="transition-colors text-dark-400 hover:text-white"
                       >
                         {selectedInnerForDelete.includes(item._id) ? (
-                          <FaCheckSquare className="text-green-400" size={16} />
+                          <FaCheckSquare className="text-green-400" size={18} />
                         ) : (
-                          <div className="w-4 h-4 border border-dark-600 rounded-sm" />
+                          <div className="w-4 h-4 border border-dark-500 rounded-sm" />
                         )}
                       </button>
                     )}
