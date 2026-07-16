@@ -9,6 +9,7 @@ const AdminLoginPage = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const { login, admin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,12 +25,15 @@ const AdminLoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
     try {
       await login(form.email, form.password);
       toast.success('Welcome back! 👋');
       navigate(from, { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Login failed. Check your credentials.');
+      const msg = err.response?.data?.message || 'Invalid username or password.';
+      setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -50,13 +54,19 @@ const AdminLoginPage = () => {
         {/* Card */}
         <div className="glass-card p-10">
           {/* Logo */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="w-14 h-14 bg-green-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-glow">
               <FaCode className="text-dark-950 text-2xl" />
             </div>
             <h1 className="text-2xl font-bold text-white mb-1">Admin Dashboard</h1>
             <p className="text-dark-400 text-sm">Sign in to manage my portfolio</p>
           </div>
+
+          {errorMsg && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm text-center">
+              {errorMsg}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username */}
@@ -111,7 +121,7 @@ const AdminLoginPage = () => {
               type="submit"
               disabled={loading}
               id="admin-login-btn"
-              className="btn-primary w-full justify-center mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="btn-primary w-full justify-center mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-dark-800 border-t-transparent rounded-full animate-spin" />
