@@ -15,12 +15,11 @@ const AdminLoginPage = () => {
   const location = useLocation();
   const from = location.state?.from?.pathname || '/admin/dashboard';
 
-  // Force a fresh login every time the admin visits the login page from the public dashboard
+  // Force a fresh login every time the admin visits the login page
   useEffect(() => {
-    if (admin) {
-      logout();
-    }
-  }, [admin, logout]);
+    logout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
